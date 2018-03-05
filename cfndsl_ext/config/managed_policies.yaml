@@ -1,0 +1,172 @@
+ec2-describe:
+  action:
+    - ec2:Describe*
+    - autoscaling:Describe*
+    - elasticloadbalancing:Describe*
+
+ec2-cleanup-eni:
+  action:
+    - ec2:DeleteNetworkInterface
+    - ec2:DetachNetworkInterface
+
+ec2-create-tag:
+  action:
+    - ec2:CreateTags
+
+cloudwatch-logs:
+  action:
+    - logs:CreateLogGroup
+    - logs:CreateLogStream
+    - logs:PutLogEvents
+    - logs:DescribeLogStreams
+    - logs:DescribeLogGroups
+  resource:
+    - arn:aws:logs:*:*:*
+
+cloudwatch-monitoring-writer:
+  action:
+    - cloudwatch:PutMetricData
+
+cloudwatch-monitoring:
+  action:
+    - cloudwatch:PutMetricData
+    - cloudwatch:GetMetricStatistics
+    - cloudwatch:ListMetrics
+
+s3-list-buckets:
+  action:
+    - s3:ListAllMyBuckets
+    - s3:ListBucket
+
+s3-chef-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - arn:aws:s3:::%{source_bucket}/chef
+    - arn:aws:s3:::%{source_bucket}/chef/*
+
+s3-codedeploy-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - arn:aws:s3:::%{source_bucket}/codedeploy
+    - arn:aws:s3:::%{source_bucket}/codedeploy/*
+
+ecs-container-instance:
+  action:
+    - ecs:CreateCluster
+    - ecs:DeregisterContainerInstance
+    - ecs:DiscoverPollEndpoint
+    - ecs:Poll
+    - ecs:RegisterContainerInstance
+    - ecs:StartTelemetrySession
+    - ecs:Submit*
+    - ecr:GetAuthorizationToken
+    - ecr:BatchCheckLayerAvailability
+    - ecr:GetDownloadUrlForLayer
+    - ecr:BatchGetImage
+    - logs:CreateLogStream
+    - logs:PutLogEvents
+
+ecs-service-role:
+  action:
+    - ecs:CreateCluster
+    - ecs:DeregisterContainerInstance
+    - ecs:DiscoverPollEndpoint
+    - ecs:Poll
+    - ecs:RegisterContainerInstance
+    - ecs:StartTelemetrySession
+    - ecs:Submit*
+    - ec2:AuthorizeSecurityGroupIngress
+    - ec2:Describe*
+    - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+    - elasticloadbalancing:Describe*
+    - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+    - elasticloadbalancing:RegisterTargets
+    - elasticloadbalancing:DeregisterTargets
+    - autoscaling:Describe*
+
+ecr-pull-images:
+  action:
+    - ecr:BatchCheckLayerAvailability
+    - ecr:BatchGetImage
+    - ecr:Get*
+    - ecr:List*
+
+attach-ebs-volume:
+  action:
+    - ec2:DescribeVolumes
+    - ec2:AttachVolume
+    - ec2:DetachVolume
+
+attach-network-interface:
+  action:
+    - ec2:DescribeNetworkInterfaces
+    - ec2:AttachNetworkInterface
+    - ec2:DetachNetworkInterface
+
+associate-address:
+  action:
+    - ec2:AssociateAddress
+
+ssm:
+  action:
+    - ssm:DescribeAssociation
+    - ssm:GetDeployablePatchSnapshotForInstance
+    - ssm:GetDocument
+    - ssm:GetParameters
+    - ssm:DescribeParameters
+    - ssm:ListAssociations
+    - ssm:ListInstanceAssociations
+    - ssm:PutInventory
+    - ssm:UpdateAssociationStatus
+    - ssm:UpdateInstanceAssociationStatus
+    - ssm:UpdateInstanceInformation
+
+ec2messages:
+  action:
+    - ec2messages:AcknowledgeMessage
+    - ec2messages:DeleteMessage
+    - ec2messages:FailMessage
+    - ec2messages:GetEndpoint
+    - ec2messages:GetMessages
+    - ec2messages:SendReply
+
+rds-backup-restore:
+  action:
+    - s3:ListBucket
+    - s3:GetBucketLocation
+    - s3:GetObjectMetaData
+    - s3:GetObject
+    - s3:PutObject
+    - s3:ListMultipartUploadParts
+    - s3:AbortMultipartUpload
+  resource:
+    - Fn::Join:
+      - ""
+      -
+        - 'arn:aws:s3:::'
+        - Fn::FindInMap:
+          - 'AccountId'
+          - Ref: 'AWS::AccountId'
+          - 'DatabaseBucket'
+    - Fn::Join:
+      - ""
+      -
+        - 'arn:aws:s3:::'
+        - Fn::FindInMap:
+          - 'AccountId'
+          - Ref: 'AWS::AccountId'
+          - 'DatabaseBucket'
+        - '/*'
+
+spot-role:
+  action:
+    - ec2:DescribeImages
+    - ec2:DescribeSubnets
+    - ec2:RequestSpotInstances
+    - ec2:TerminateInstances
+    - ec2:DescribeInstanceStatus
+    - iam:PassRole

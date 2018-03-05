@@ -1,0 +1,156 @@
+####
+####  highlander publish  [component_dir:-$PWD]  (defaults to current dir) -  (publishes highlander component)
+####  highlander compile  [component_dir:-$PWD]  [--format json] - compile component to cloudformation template
+####  highlander env create --name [stack_name]  [component_name@version:-$PWD] create environment out of component (compile, deploy to s3, update)
+####  highlander env update --name [stack_name]  [component_name@version]       update environment to component version (compile,deploy to s3, update)
+####  highlander env delete --name [stack_name]
+####
+
+component_name = ARGV[0]
+
+require 'thor'
+require 'rubygems'
+require_relative '../lib//highlander.compiler'
+require_relative '../lib/highlander.factory'
+require_relative '../lib/highlander.publisher'
+require_relative '../lib/highlander.validator'
+
+class HighlanderCli < Thor
+
+  if ENV['HIGHLANDER_WORKDIR'].nil?
+    ENV['HIGHLANDER_WORKDIR'] = ENV['PWD']
+  end
+
+  package_name "highlander"
+
+  desc 'configcompile component[@version]', 'Compile Highlander components configuration'
+
+  def configcompile(component_name)
+
+    # find and load component
+    component_loader = Highlander::Factory::ComponentFactory.new
+    component = component_loader.findComponent(component_name)
+    component.load
+
+    # compile cfndsl template
+    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.writeConfig(true)
+  end
+
+  desc 'dslcompile component[@version]', 'Compile Highlander component configuration and create cfndsl templates'
+  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
+      :desc => 'Version to compile by which subcomponents are referenced'
+  method_option :dstbucket, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 bucket'
+  method_option :dstprefix, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 prefix'
+  method_option :format, :type => :string, :required => true, :default => 'yaml', :aliases => "-f",
+      :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
+  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+
+  def dslcompile(component_name)
+    component = build_component(options, component_name)
+
+    # compile cfndsl template
+    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.silent_mode = options[:quiet]
+    out_format = options[:format]
+    component_compiler.compileCfnDsl out_format
+  end
+
+
+  desc 'cfcompile component[@version]', 'Compile Highlander component to CloudFormation templates'
+  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
+      :desc => 'Version to compile by which subcomponents are referenced'
+  method_option :dstbucket, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 bucket'
+  method_option :dstprefix, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 prefix'
+  method_option :format, :type => :string, :required => true, :default => 'yaml', :aliases => "-f",
+      :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
+  method_option :validate, :type => :boolean, :default => false,
+      :desc => 'Optionally validate template'
+  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+
+  def cfcompile(component_name)
+    component = build_component(options, component_name)
+
+    # compile cloud formation
+    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.silent_mode = options[:quiet]
+    out_format = options[:format]
+    component_compiler.compileCloudFormation out_format
+    if options[:validate]
+      component_validator = Highlander::Cloudformation::Validator.new(component)
+      component_validator.validate(component_compiler.cfn_template_paths, out_format)
+    end
+    component_compiler
+  end
+
+  desc 'cfpublish component[@version]', 'Publish CloudFormation template for component,
+            and it\' referenced subcomponents'
+  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
+      :desc => 'Version to compile by which subcomponents are referenced'
+  method_option :dstbucket, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 bucket'
+  method_option :dstprefix, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 prefix'
+  method_option :format, :type => :string, :required => true, :default => 'yaml', :aliases => "-f",
+      :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
+  method_option :validate, :type => :boolean, :default => false,
+      :desc => 'Optionally validate template'
+  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+  def cfpublish(component_name)
+    compiler = cfcompile(component_name)
+    publisher = Highlander::Publisher::Component.new(compiler.component)
+    publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
+  end
+
+
+  desc 'publish component[@version] [-v published_version]', 'Publish CloudFormation template for component,
+            and it\'s referenced subcomponents'
+  method_option :dstbucket, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 bucket'
+  method_option :dstprefix, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 prefix'
+  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
+      :desc => 'Distribution component version, defaults to latest'
+  def publish(component_name)
+    component_version = options[:version]
+    distribution_bucket = options[:dstbucket]
+    distribution_prefix = options[:dstprefix]
+
+    # find and load component
+    component_loader = Highlander::Factory::ComponentFactory.new
+    component = component_loader.findComponent(component_name)
+    component.version = component_version
+    component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
+    component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
+    component.load
+
+    publisher = Highlander::Publisher::Component.new(component)
+    publisher.publishComponent
+  end
+
+end
+
+# build component from passed cli options
+def build_component(options, component_name)
+  component_version = options[:version]
+  distribution_bucket = options[:dstbucket]
+  distribution_prefix = options[:dstprefix]
+
+  # find and load component
+  component_loader = Highlander::Factory::ComponentFactory.new
+  component = component_loader.findComponent(component_name)
+  component.version = component_version unless component_version.nil?
+  component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
+  component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
+  component.load
+  component
+end
+
+HighlanderCli.start
