@@ -6,7 +6,9 @@ WORKDIR /src
 RUN gem build highlander.gemspec && gem install highlander-0.1.0.gem && \
     rm -rf /src
 
-RUN adduser -h /work -u 1000 -D highlander
+RUN adduser -u 1000 -D highlander
+
+RUN apk add --update python py-pip git && pip install awscli
 
 WORKDIR /work
 
