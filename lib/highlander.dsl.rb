@@ -231,7 +231,10 @@ module Highlander
                     real_component_name = component.export_config[component_name]
                     export_keys.each { |export_component_key|
                       puts("Exporting config for key=#{export_component_key} from #{component.name} to #{real_component_name}")
-                      @config_overrides[real_component_name][export_component_key] = cl.config[export_component_key]
+                      if not @config_overrides[real_component_name].key? export_component_key
+                        @config_overrides[real_component_name][export_component_key] = {}
+                      end
+                      @config_overrides[real_component_name][export_component_key].extend(cl.config[export_component_key])
                     }
                   else
                     STDERR.puts("Trying to export configuration for non-existant component #{component.export_config[component_name]}")
@@ -239,7 +242,10 @@ module Highlander
                 elsif @config_overrides.key? component_name
                   export_keys.each { |export_component_key|
                     puts("Exporting config for key=#{export_component_key} from #{component.name} to #{component_name}")
-                    @config_overrides[component_name][export_component_key] = cl.config[export_component_key]
+                    if not @config_overrides[component_name].key? export_component_key
+                      @config_overrides[component_name][export_component_key] = {}
+                    end
+                    @config_overrides[component_name][export_component_key].extend(cl.config[export_component_key])
                   }
                 else
                   STDERR.puts("Trying to export configuration for non-existant component #{component_name}")

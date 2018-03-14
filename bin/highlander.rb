@@ -6,7 +6,6 @@
 ####  highlander env delete --name [stack_name]
 ####
 
-component_name = ARGV[0]
 
 require 'thor'
 require 'rubygems'
@@ -17,9 +16,7 @@ require_relative '../lib/highlander.validator'
 
 class HighlanderCli < Thor
 
-  if ENV['HIGHLANDER_WORKDIR'].nil?
-    ENV['HIGHLANDER_WORKDIR'] = ENV['PWD']
-  end
+
 
   package_name "highlander"
 
@@ -46,7 +43,7 @@ class HighlanderCli < Thor
       :desc => 'Distribution S3 prefix'
   method_option :format, :type => :string, :required => true, :default => 'yaml', :aliases => "-f",
       :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
-  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+  method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
   def dslcompile(component_name)
@@ -71,7 +68,7 @@ class HighlanderCli < Thor
       :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
   method_option :validate, :type => :boolean, :default => false,
       :desc => 'Optionally validate template'
-  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+  method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
   def cfcompile(component_name)
@@ -101,8 +98,9 @@ class HighlanderCli < Thor
       :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
   method_option :validate, :type => :boolean, :default => false,
       :desc => 'Optionally validate template'
-  method_option :quiet, :type => :boolean, :default => false,:aliases => '-q',
+  method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+
   def cfpublish(component_name)
     compiler = cfcompile(component_name)
     publisher = Highlander::Publisher::Component.new(compiler.component)
@@ -118,6 +116,7 @@ class HighlanderCli < Thor
       :desc => 'Distribution S3 prefix'
   method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
       :desc => 'Distribution component version, defaults to latest'
+
   def publish(component_name)
     component_version = options[:version]
     distribution_bucket = options[:dstbucket]
@@ -139,6 +138,9 @@ end
 
 # build component from passed cli options
 def build_component(options, component_name)
+  if ENV['HIGHLANDER_WORKDIR'].nil?
+    ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
+  end
   component_version = options[:version]
   distribution_bucket = options[:dstbucket]
   distribution_prefix = options[:dstprefix]
