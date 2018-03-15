@@ -39,7 +39,7 @@ module Highlander
       def load_config()
         @config = {} if @config.nil?
         Dir["#{@component_dir}/*.config.yaml"].each do |config_file|
-          partial_config = YAML.safe_load(File.read(config_file))
+          partial_config = YAML.load(File.read(config_file))
           unless partial_config.nil?
             @config.extend(partial_config)
             @component_files << config_file
@@ -75,7 +75,7 @@ module Highlander
         # end unless config_override.nil?
 
         Dir[candidate_mappings_path].each do |mapping_file|
-          mappings = YAML.safe_load(File.read(mapping_file))
+          mappings = YAML.load(File.read(mapping_file))
           @component_files << mapping_file
           mappings.each do |name, map|
             @mappings[name] = map
