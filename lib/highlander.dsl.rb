@@ -380,7 +380,7 @@ def HighlanderComponent(&block)
 
   component_config = @config
 
-  instance.config.extend(@config)
+  instance.config = @config
 
   @mappings.each do |key, val|
     instance.addMapping(key, val)
