@@ -91,12 +91,21 @@ module Highlander
         @component_files << @highlander_dsl_path
         @highlander_dsl = eval(File.read(@highlander_dsl_path), binding)
 
+        # set version if not defined
+        @highlander_dsl.ComponentVersion(@version) unless @version.nil?
+
+
+        # Handle name and description defaults if they are not specified
+        # in template itself
         if @highlander_dsl.name.nil?
           @highlander_dsl.name = @name
         end
 
-        # set (override) version and other distribution options
-        @highlander_dsl.ComponentVersion(@version) unless @version.nil?
+        if @highlander_dsl.description.nil?
+          @highlander_dsl.Description("#{@highlander_dsl.name} - #{@highlander_dsl.version}")
+        end
+
+        # set (override) distribution options
         @highlander_dsl.DistributionBucket(@distribution_bucket) unless @distribution_bucket.nil?
         @highlander_dsl.DistributionPrefix(@distribution_prefix) unless @distribution_prefix.nil?
 

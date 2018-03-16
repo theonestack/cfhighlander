@@ -26,12 +26,13 @@ module Highlander
           :distribute_url,
           :distribution_bucket,
           :distribution_prefix,
-          :lambda_functions_keys
+          :lambda_functions_keys,
+          :description
 
       def initialize
         @mappings = []
         @components = []
-        @config = { 'mappings' => {} }
+        @config = { 'mappings' => {}, 'component_version' => 'latest' }
         @component_configs = {}
         @version = 'latest'
         @distribute_url = nil
@@ -40,6 +41,8 @@ module Highlander
         @parameters = Parameters.new
         @lambda_functions_keys = []
       end
+
+      # DSL statements
 
       def addMapping(name, map)
         @mappings << name
@@ -52,6 +55,11 @@ module Highlander
         @config['component_name'] = name
       end
 
+      def Description(description)
+        @description = description
+        @config['description'] = description
+      end
+
       def Parameters(&block)
         @parameters.config = @config
         @parameters.instance_eval(&block)
@@ -61,6 +69,72 @@ module Highlander
         maps = mappings_provider_maps(providerName, self.config)
         maps.each { |name, map| addMapping(name, map) } unless maps.nil?
       end
+
+      def Component(name:, template:, param_values: {}, config: {}, export_config: {}, &block)
+        puts "Initialize #{name} with template #{template}"
+
+        # load component
+        component = Highlander::Dsl::Component.new(self,
+            name,
+            template,
+            param_values,
+            @component_sources,
+            config,
+            export_config
+        )
+        component.distribute_bucket = @distribution_bucket unless @distribution_bucket.nil?
+        component.distribute_prefix = @distribution_prefix unless @distribution_prefix.nil?
+        component.version = @version unless @version.nil?
+        @component_configs[name] = config
+        @components << component
+      end
+
+      def ComponentVersion(version)
+        @version = version
+        @config['component_version'] = version
+        build_distribution_url
+      end
+
+      def DistributionPrefix(prefix)
+        @distribution_prefix = prefix
+        build_distribution_url
+      end
+
+      def DistributionBucket(bucket_name)
+        @distribution_bucket = bucket_name
+        build_distribution_url
+      end
+
+      def ComponentDistribution(s3_url)
+        if s3_url.start_with? 's3://'
+          if s3_url.split('/').length < 4
+            raise 'Unrecognised distribution url, only supporting s3://bucket/prefix urls'
+          end
+          parts = s3_url.split('/')
+          @distribution_bucket = parts[2]
+          @distribution_prefix = parts[3]
+          i = 4
+          while i < parts.size()
+            @distribution_prefix += "/#{parts[i]}"
+            i += 1
+          end
+          @distribution_prefix = @distribution_prefix.chomp('/')
+
+          build_distribution_url
+        else
+          raise 'Unrecognised distribution url, only supporting s3://bucket/prefix urls'
+        end
+      end
+
+      def ComponentSources(sources_array)
+        @component_sources = sources_array
+      end
+
+      def LambdaFunctions(config_key)
+        @lambda_functions_keys << config_key
+      end
+
+      # Internal and interface functions
 
       def loadComponents()
 
@@ -265,65 +339,6 @@ module Highlander
         }
       end
 
-      def Component(name:, template:, param_values: {}, config: {}, export_config: {}, &block)
-        puts "Initialize #{name} with template #{template}"
-
-        # load component
-        component = Highlander::Dsl::Component.new(self,
-            name,
-            template,
-            param_values,
-            @component_sources,
-            config,
-            export_config
-        )
-        component.distribute_bucket = @distribution_bucket unless @distribution_bucket.nil?
-        component.distribute_prefix = @distribution_prefix unless @distribution_prefix.nil?
-        component.version = @version unless @version.nil?
-        @component_configs[name] = config
-        @components << component
-      end
-
-      def ComponentVersion(version)
-        @version = version
-        build_distribution_url
-      end
-
-      def DistributionPrefix(prefix)
-        @distribution_prefix = prefix
-        build_distribution_url
-      end
-
-      def DistributionBucket(bucket_name)
-        @distribution_bucket = bucket_name
-        build_distribution_url
-      end
-
-      def ComponentDistribution(s3_url)
-        if s3_url.start_with? 's3://'
-          if s3_url.split('/').length < 4
-            raise 'Unrecognised distribution url, only supporting s3://bucket/prefix urls'
-          end
-          parts = s3_url.split('/')
-          @distribution_bucket = parts[2]
-          @distribution_prefix = parts[3]
-          i = 4
-          while i < parts.size()
-            @distribution_prefix += "/#{parts[i]}"
-            i += 1
-          end
-          @distribution_prefix = @distribution_prefix.chomp('/')
-
-          build_distribution_url
-        else
-          raise 'Unrecognised distribution url, only supporting s3://bucket/prefix urls'
-        end
-      end
-
-      def LambdaFunctions(config_key)
-        @lambda_functions_keys << config_key
-      end
-
       def distribute_bucket=(value)
         @distribution_bucket = value
         build_distribution_url
@@ -332,6 +347,10 @@ module Highlander
       def distribute_prefix=(value)
         @distribution_prefix = value
         build_distribution_url
+      end
+
+      def name=(value)
+        self.Name(value)
       end
 
       def build_distribution_url
@@ -347,9 +366,7 @@ module Highlander
         end
       end
 
-      def ComponentSources(sources_array)
-        @component_sources = sources_array
-      end
+
     end
   end
 
@@ -363,7 +380,7 @@ def HighlanderComponent(&block)
 
   component_config = @config
 
-  instance.config = @config
+  instance.config.extend(@config)
 
   @mappings.each do |key, val|
     instance.addMapping(key, val)
