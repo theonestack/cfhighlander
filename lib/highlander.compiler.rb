@@ -8,7 +8,9 @@ require 'yaml'
 require 'open-uri'
 require 'net/http'
 require 'net/https'
-require "highline/import"
+require 'highline/import'
+require 'zip'
+require_relative './util/zip.util'
 
 module Highlander
 
@@ -278,15 +280,10 @@ module Highlander
                 exit -4
               end
             end
+            File.delete full_destination_path if File.exist? full_destination_path
+            zip_generator = Highlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
+            zip_generator.write
 
-            zip_options = "#{zip_options} -r" if Pathname.new(full_path).directory?
-            zip_cmd = "cd #{lambda_source_dir} && zip #{zip_options} #{full_destination_path} #{lambda_source_file}"
-            zip_result = system(zip_cmd)
-
-            if not zip_result
-              puts "Creation of deployment archive for Lambda function #{name} failed"
-              exit -5
-            end
           end
 
           sha256 = Digest::SHA256.file full_destination_path
