@@ -7,8 +7,9 @@ module Highlander
 
     class Component
 
-      def initialize(component)
+      def initialize(component, cleanup)
         @component = component
+        @cleanup_destination = cleanup
       end
 
       def publishComponent
@@ -22,7 +23,7 @@ module Highlander
           print "Deleting previously published #{s3obj.key} ..."
           s3.delete_object(bucket: bucket, key: s3obj.key)
           print " [OK] \n"
-        end
+        end if @cleanup_destination
 
         @component.component_files.each do |file_path|
           File.open(file_path, 'rb') do |file|
@@ -47,7 +48,7 @@ module Highlander
           print "\nDeleting previously published #{s3obj.key} ..."
           s3.delete_object(bucket: bucket, key: s3obj.key)
           print ' [OK]'
-        end
+        end if @cleanup_destination
 
         file_list.each do |file|
           file_name = File.basename file

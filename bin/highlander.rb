@@ -103,7 +103,7 @@ class HighlanderCli < Thor
 
   def cfpublish(component_name)
     compiler = cfcompile(component_name)
-    publisher = Highlander::Publisher::Component.new(compiler.component)
+    publisher = Highlander::Publisher::Component.new(compiler.component, false)
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
   end
 
@@ -130,7 +130,7 @@ class HighlanderCli < Thor
     component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
     component.load
 
-    publisher = Highlander::Publisher::Component.new(component)
+    publisher = Highlander::Publisher::Component.new(component, true)
     publisher.publishComponent
   end
 
