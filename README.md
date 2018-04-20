@@ -368,9 +368,24 @@ end
  ```
 
 
-### OutputParam
+#### OutputParam
 
 TBD
+
+### DependsOn
+
+`DependsOn` - this will include any globally exported libraries from given 
+template. E.g.
+
+ ```ruby
+HighlanderComponent do
+  Name 's3'
+  DependsOn 'vpc@1.0.3'
+end
+ ```
+ 
+Will include any cfndsl libraries present and exported in vpc template 
+so extension methods can be consumed within cfndsl template.
 
 ### LambdaFunctions
 

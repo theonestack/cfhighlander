@@ -47,6 +47,15 @@ module Highlander
         end
       end
 
+
+      def loadDepandantExt()
+        @highlander_dsl.dependson_components.each do |requirement|
+          requirement.component_loaded.cfndsl_ext_files.each do |file|
+            cfndsl_ext_files << file
+          end
+        end
+      end
+
       # @param [Hash] config_override
       def load(config_override = nil)
         if @component_dir.start_with? 'http'
@@ -122,6 +131,8 @@ module Highlander
         else
           @cfndsl_content = ''
         end
+
+        loadDepandantExt()
       end
     end
 

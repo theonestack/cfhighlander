@@ -27,7 +27,8 @@ module Highlander
           :distribution_bucket,
           :distribution_prefix,
           :lambda_functions_keys,
-          :description
+          :description,
+          :dependson_components
 
       def initialize
         @mappings = []
@@ -40,6 +41,8 @@ module Highlander
         @component_sources = []
         @parameters = Parameters.new
         @lambda_functions_keys = []
+        @dependson_components_templates = []
+        @dependson_components = []
       end
 
       # DSL statements
@@ -69,6 +72,11 @@ module Highlander
         maps = mappings_provider_maps(providerName, self.config)
         maps.each { |name, map| addMapping(name, map) } unless maps.nil?
       end
+
+      def DependsOn(template)
+        @dependson_components_templates << template
+      end
+
 
       def Component(name:, template:, param_values: {}, config: {}, export_config: {}, &block)
         puts "Initialize #{name} with template #{template}"
@@ -206,6 +214,17 @@ module Highlander
           # late bind parameter values, once mappings and top level params are extracted
           component.load_parameters
         }
+
+        @dependson_components_templates.each do |template|
+          component = Highlander::Dsl::Component.new(self,
+              template,
+              template,
+              {},
+              @component_sources
+          )
+          component.load
+          @dependson_components << component
+        end
       end
 
       def load_extension_exports
