@@ -121,6 +121,7 @@ module Highlander
         if File.exist? @cfndsl_path
           @component_files << @cfndsl_path
           @cfndsl_content = File.read(@cfndsl_path)
+          @cfndsl_content.strip!
           # if there is CloudFormation do [content] end extract only contents
           ### Regex \s is whitespace
           match_data = /^CloudFormation do\s(.*)end\s?$/m.match(@cfndsl_content)

@@ -2,7 +2,7 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'highlander'
-  s.version = '0.1.1'
+  s.version = '0.1.2'
   s.date = '2018-04-19'
   s.summary = 'DSL on top of cfndsl. Manage libraries of cloudformation components'
   s.description = ''

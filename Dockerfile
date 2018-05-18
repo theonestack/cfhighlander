@@ -3,7 +3,9 @@ FROM ruby:2.3-alpine
 COPY . /src
 
 WORKDIR /src
-RUN gem build highlander.gemspec && gem install highlander-0.1.1.gem && \
+RUN rm highlander-*.gem ; \
+    gem build highlander.gemspec && \
+    gem install highlander-*.gem && \
     rm -rf /src
 
 RUN adduser -u 1000 -D highlander && \
