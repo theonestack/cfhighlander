@@ -1,5 +1,6 @@
 require_relative './highlander.dsl'
 require 'fileutils'
+require 'git'
 
 LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.highlander/components"
 
@@ -70,7 +71,7 @@ module Highlander
         candidate_dynamic_mappings_path = "#{@component_dir}/#{@name}.mappings.rb"
 
         @cfndsl_ext_files += Dir["#{@component_dir}/ext/cfndsl/*.rb"]
-        @lambda_src_files += Dir["#{@component_dir}/lambdas/**/*"].find_all { |p| not File.directory? p }
+        @lambda_src_files += Dir["#{@component_dir}/lambdas/**/*"].find_all {|p| not File.directory? p}
         @component_files += @cfndsl_ext_files
         @component_files += @lambda_src_files
 
@@ -158,6 +159,53 @@ module Highlander
         @component_sources = component_sources
       end
 
+      def findComponentDefault(component_name, component_version)
+        default_lookup_url = 'https://github.com/theonestack'
+        default_lookup_url = ENV['HIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'] if ENV.key? 'HIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'
+
+        git_url = "#{default_lookup_url}/hl-component-#{component_name}"
+
+        if component_version.nil? or component_version.empty? or component_version == 'latest'
+          branch = 'master'
+        else
+          branch = component_version
+        end
+        local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{component_name}/#{component_version}"
+        return findComponentGit(local_path, component_name, component_version, git_url, branch)
+
+      end
+
+      def findComponentGit(local_path, component_name, component_version, git_url, branch)
+        begin
+          local_path = "#{local_path}/" unless local_path.end_with? '/'
+          # if this is snapshot, clean local cache
+          if branch.end_with? '.snapshot'
+            branch = branch.gsub('.snapshot', '')
+            FileUtils.rmtree local_path if File.exist? local_path and File.directory? local_path
+          end
+
+          # if local cache exists, return from cache
+          if not Dir.glob("#{local_path}*.highlander.rb").empty?
+            # if cache exists, just return from cache
+            component_name = Dir.glob("#{local_path}*.highlander.rb")[0].gsub(local_path, '').gsub('.highlander.rb','')
+            return component_name, local_path
+          end
+
+          # shallow clone
+          puts "Trying to load #{component_name}/#{component_version} from #{git_url}##{branch} ... "
+          clone_opts = { depth: 1 }
+          clone_opts[:branch] = branch if not (branch.nil? or branch.empty?)
+          Git.clone git_url, local_path, clone_opts
+          puts "\t .. cached in #{local_path}\n"
+          # return from cache once it's cloned
+          return findComponentGit(local_path, component_name, component_version, git_url, branch)
+        rescue Exception => e
+          STDERR.puts "Failed to resolve component #{component_name}@#{component_version} from #{git_url}"
+          STDERR.puts e
+          return nil
+        end
+      end
+
       def findComponentS3(s3_location, component_name, component_version)
         parts = s3_location.split('/')
         bucket = parts[2]
@@ -175,7 +223,7 @@ module Highlander
           })
           # if code execution got so far we consider file exists and download it locally
           component_files = s3.list_objects_v2({ bucket: bucket, prefix: s3_prefix })
-          component_files.contents.each { |s3_object|
+          component_files.contents.each {|s3_object|
             file_name = s3_object.key.gsub(s3_prefix, '')
             destination_file = "#{local_destination}/#{file_name}"
             destination_dir = File.dirname(destination_file)
@@ -194,18 +242,72 @@ module Highlander
         end
       end
 
+      def findComponentGitTemplate(component_name, component_version)
+        if component_name.include? '#'
+          parts = component_name.split('#')
+          component_name = parts[0]
+          component_version = parts[1]
+        end
+
+        # avoid any nres
+        component_version = '' if component_version.nil?
+
+        # if empty or latest branch is empty
+        if component_version.empty? or component_version == 'latest' or component_version == 'latest.snapshot'
+          branch = ''
+        else
+          # otherwise component version is actual branch
+          branch = component_version
+        end
+
+
+        git_url = nil
+        if component_name.start_with? 'git:'
+          git_url = component_name.gsub('git:', '')
+        elsif component_name.start_with? 'github:'
+          git_url = "https://github.com/#{component_name.gsub('github:', '')}"
+        elsif component_name.start_with? 'github.com:'
+          git_url = "https://github.com/#{component_name.gsub('github.com:', '')}"
+        end
+
+        local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{component_name}/#{component_version}"
+
+        if not git_url.nil?
+          component_name, location = findComponentGit(local_path, component_name, component_version, git_url, branch)
+          if location.nil?
+            raise "Could not resolve component #{component_name}@#{component_version}"
+          else
+            return component_name, location
+          end
+        end
+
+        return nil
+      end
+
       # Find component and given list of sources
       # @return [Highlander::Factory::Component]
       def findComponent(component_name, component_version = nil)
-        if component_name.include? '@'
+
+        component_version_s = component_version.nil? ? 'latest' : component_version
+        component_version = nil if component_version == 'latest'
+
+        if component_name.include? '@' and (not component_name.start_with? 'git')
           parts = component_name.split('@')
           component_name = parts[0]
           component_version = parts[1]
         end
 
-        component_version_s = component_version.nil? ? 'latest' : component_version
-        component_version = nil if component_version == 'latest'
+        # if component specified as git location
+        new_name, candidate_git = findComponentGitTemplate(component_name, component_version)
+        return buildComponent(new_name, candidate_git) unless candidate_git.nil?
 
+        # if not git but has .snapshot lookup in default
+        if (not component_version.nil?) and component_version.end_with? '.snapshot'
+          new_name, default_candidate = findComponentDefault(component_name, component_version)
+          return buildComponent(new_name, default_candidate) unless default_candidate.nil?
+        end
+
+        # try in all of the component source
         @component_sources.each do |source|
           component_full_name = "#{component_name}@#{component_version.nil? ? 'latest' : component_version}"
           # TODO handle http(s) sources and their download to local
@@ -236,6 +338,11 @@ module Highlander
             end unless component_version_s != 'latest'
           end
         end
+
+        # try default component source on github
+        component_name, default_candidate = findComponentDefault(component_name, component_version)
+        return buildComponent(component_name, default_candidate) unless default_candidate.nil?
+
         raise StandardError, "highlander template #{component_name}@#{component_version_s} not located" +
             " in sources #{@component_sources}"
       end

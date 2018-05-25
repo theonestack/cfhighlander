@@ -48,7 +48,7 @@ module Highlander
 
         template_name = template
         template_version = 'latest'
-        if template.include?('@')
+        if template.include?('@') and not (template.start_with? 'git')
           template_name = template.split('@')[0]
           template_version = template.split('@')[1]
         end
