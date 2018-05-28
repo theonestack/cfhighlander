@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.com/theonestack/cfhighlander)
+
 # Highlander
 
 Highlander is DSL processor that enables composition and orchestration of Amazon CloudFormation templates 
