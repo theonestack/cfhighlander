@@ -39,11 +39,11 @@ def mapping_value(component:, provider_name:, value_name:, key_name: nil)
     provider = mappings_provider(provider_name)
     if provider.nil?
       STDERR.puts("Error: mapping provider #{provider_name} not found, can't render value of #{value_name} attribute")
-      exit 240
+      return nil
     end
     unless provider.respond_to? 'getDefaultKey'
       STDERR.puts("Error: #{provider} does not implement getDefaultKey. Can't render value of #{value_name} attribtue")
-      exit 241
+      return nil
     end
 
     key_name = provider.getDefaultKey
@@ -66,7 +66,7 @@ def mapping_value(component:, provider_name:, value_name:, key_name: nil)
     # check if mapping exists on component
     unless ((component.config['mappings'].key? map_name))
       STDERR.puts("Could not resolve mapping value: MapName=#{map_name},Key=#{key_name},Attribute=#{value_name}")
-      exit 242
+      return nil
     end
   end
 
@@ -85,7 +85,7 @@ def mapping_value(component:, provider_name:, value_name:, key_name: nil)
 
   if value_name.nil?
     STDERR.puts("No value defined for mapping parameter. MapName=#{map_name},Key=#{key_name},Attribute=#{value_name}")
-    exit 243
+    return nil
   end
   if value_name.class == Hash
     value_name = value_name.to_s

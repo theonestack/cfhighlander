@@ -298,12 +298,12 @@ module Highlander
         end
 
         # if component specified as git location
-        new_name, candidate_git = findComponentGitTemplate(component_name, component_version)
+        new_name, candidate_git = findComponentGitTemplate(component_name, component_version_s)
         return buildComponent(new_name, candidate_git) unless candidate_git.nil?
 
         # if not git but has .snapshot lookup in default
         if (not component_version.nil?) and component_version.end_with? '.snapshot'
-          new_name, default_candidate = findComponentDefault(component_name, component_version)
+          new_name, default_candidate = findComponentDefault(component_name, component_version_s)
           return buildComponent(new_name, default_candidate) unless default_candidate.nil?
         end
 
@@ -340,7 +340,7 @@ module Highlander
         end
 
         # try default component source on github
-        component_name, default_candidate = findComponentDefault(component_name, component_version)
+        component_name, default_candidate = findComponentDefault(component_name, component_version_s)
         return buildComponent(component_name, default_candidate) unless default_candidate.nil?
 
         raise StandardError, "highlander template #{component_name}@#{component_version_s} not located" +
