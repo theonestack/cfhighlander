@@ -6,3 +6,9 @@ script:
   - gem install cfhighlander-*.gem
   - which cfhighlander && cfhighlander help
   - bundle exec rspec
+deploy:
+  provider: rubygems
+  api_key: "${RUBYGEMS_API_KEY}"
+  on:
+   all_branches: true
+   condition: $TRAVIS_BRANCH =~ ^develop|master &&  $TRAVIS_EVENT_TYPE =~ ^push|api$
