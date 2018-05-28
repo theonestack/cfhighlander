@@ -195,7 +195,21 @@ module Highlander
           # could still be nil after this line
         end
 
-        return mapping_value(component: component, provider_name: mappings_name, value_name: param.mapAttribute, key_name: key_name)
+        value =  mapping_value(component: component,
+            provider_name: mappings_name,
+            value_name: param.mapAttribute,
+            key_name: key_name
+        )
+
+        if value.nil?
+          return "'#{param.default_value}'" unless param.default_value.empty?
+          return "''"
+        end
+
+        return value
+
+
+        return value
       end
 
       def self.resolveOutputParamValue(component, sub_component, param)
