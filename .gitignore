@@ -12,7 +12,7 @@
 
 # Used by dotenv library to load environment variables.
 # .env
-
+test/
 ## Specific to RubyMotion:
 .dat*
 .repl_history
