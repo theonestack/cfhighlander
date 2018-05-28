@@ -3,3 +3,4 @@ rvm:
   - 2.3
 script:
   - gem build cfhighlander.gemspec
+  - ls -la
