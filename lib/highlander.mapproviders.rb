@@ -12,11 +12,6 @@ module Highlander
       def self.getMaps(config)
         return @@maps if not @@maps.nil?
         @@maps = {
-            'AccountId' => {
-                "012345678901" => {
-                    'DnsDomain' => 'example.com'
-                }
-            }
         }
         return @@maps
       end

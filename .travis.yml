@@ -1,0 +1,8 @@
+language: ruby
+rvm:
+  - 2.3
+script:
+  - gem build cfhighlander.gemspec
+  - gem install cfhighlander-*.gem
+  - which cfhighlander && cfhighlander help
+  - bundle exec rspec
