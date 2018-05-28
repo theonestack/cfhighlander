@@ -5,4 +5,4 @@ script:
   - gem build cfhighlander.gemspec
   - gem install cfhighlander-*.gem
   - which cfhighlander && cfhighlander help
-  - rspec
+  - bundle exec rspec
