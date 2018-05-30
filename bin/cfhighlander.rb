@@ -9,7 +9,7 @@
 
 require 'thor'
 require 'rubygems'
-require_relative '../lib//highlander.compiler'
+require_relative '../lib/highlander.compiler'
 require_relative '../lib/highlander.factory'
 require_relative '../lib/highlander.publisher'
 require_relative '../lib/highlander.validator'
@@ -138,9 +138,7 @@ end
 
 # build component from passed cli options
 def build_component(options, component_name)
-  if ENV['HIGHLANDER_WORKDIR'].nil?
-    ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
-  end
+
   component_version = options[:version]
   distribution_bucket = options[:dstbucket]
   distribution_prefix = options[:dstprefix]
@@ -153,6 +151,13 @@ def build_component(options, component_name)
   component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
   component.load
   component
+end
+
+if ENV['CFHIGHLANDER_WORKDIR'].nil?
+  ENV['CFHIGHLANDER_WORKDIR'] = Dir.pwd
+end
+if ENV['HIGHLANDER_WORKDIR'].nil?
+  ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
 end
 
 HighlanderCli.start

@@ -2,7 +2,7 @@ require_relative './highlander.dsl'
 require 'fileutils'
 require 'git'
 
-LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.highlander/components"
+LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.cfhighlander/components"
 
 module Highlander
 

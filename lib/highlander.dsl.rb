@@ -397,7 +397,6 @@ def HighlanderComponent(&block)
   puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
       "\n\tConfig:#{@config}"
 
-  component_config = @config
 
   instance.config = @config
 
@@ -425,4 +424,8 @@ def HighlanderComponent(&block)
   instance.loadComponents
 
   return instance
+end
+
+def CfhighlanderComponent(&block)
+  HighlanderComponent(&block)
 end
