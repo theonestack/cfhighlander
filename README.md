@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.com/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.com/theonestack/cfhighlander)
 
-# Highlander
+# Cfhighlander
 
-Highlander is DSL processor that enables composition and orchestration of Amazon CloudFormation templates 
+Cfhighlander is DSL processor that enables composition and orchestration of Amazon CloudFormation templates 
 written using [CfnDsl](https://github.com/cfndsl/cfndsl) in an abstract way. It tries to tackle problem of merging multiple templates into master
 template in an elegant way, so higher degree of template reuse can be achieved. It does so by formalising commonly
 used patterns via DSL statements. For an example, passing output of one stack into other stack is achieved using 
@@ -48,7 +48,7 @@ this file defines map used within component itself
 - Define cfndsl template used for building CloudFormation resources
 
 
-**Outer component** is component that defines other component via higlander dsl `Component` statement. Defined component
+**Outer component** is component that defines other component via cfhighlander dsl `Component` statement. Defined component
 is called **inner component**. Components defined under same outer component are **sibling components**
 
 ## Usage
@@ -58,30 +58,30 @@ For both ways, highlander is distributed as ruby gem
 
 
 ```bash
-$ gem install highlander
-$ highlander help
-highlander commands:
-  highlander cfcompile component[@version] -f, --format=FORMAT   # Compile Highlander component to CloudFormation templates
-  highlander cfpublish component[@version] -f, --format=FORMAT   # Publish CloudFormation template for component, and it' referenced subcomponents
-  highlander configcompile component[@version]                   # Compile Highlander components configuration
-  highlander dslcompile component[@version] -f, --format=FORMAT  # Compile Highlander component configuration and create cfndsl templates
-  highlander help [COMMAND]                                      # Describe available commands or one specific command
-  highlander publish component[@version] [-v published_version]  # Publish CloudFormation template for component, and it' referenced subcomponents
+$ gem install cfhighlander
+$ cfhighlander help
+cfhighlander commands:
+  cfhighlander cfcompile component[@version] -f, --format=FORMAT   # Compile Highlander component to CloudFormation templates
+  cfhighlander cfpublish component[@version] -f, --format=FORMAT   # Publish CloudFormation template for component, and it' referenced subcomponents
+  cfhighlander configcompile component[@version]                   # Compile Highlander components configuration
+  cfhighlander dslcompile component[@version] -f, --format=FORMAT  # Compile Highlander component configuration and create cfndsl templates
+  cfhighlander help [COMMAND]                                      # Describe available commands or one specific command
+  cfhighlander publish component[@version] [-v published_version]  # Publish CloudFormation template for component, and it' referenced subcomponents
 
 ```
 ### Working directory
 
 All templates and configuration generated are placed in `$WORKDIR/out` directory. Optionally, you can alter working directory
-via `HIGHLANDER_WORKDIR` environment variable. 
+via `CFHIGHLANDER_WORKDIR` environment variable. 
 
 ### Commands
 
 To get full list of options for any of cli commands use `highlander help command_name` syntax
 
 ```bash
-$ highlander help publish
+$ cfhighlander help publish
 Usage:
-  highlander publish component[@version] [-v published_version]
+  cfhighlander publish component[@version] [-v published_version]
 
 Options:
       [--dstbucket=DSTBUCKET]  # Distribution S3 bucket
@@ -95,7 +95,7 @@ Publish CloudFormation template for component,
 
 #### Silent mode
 
-Highlander DSL processor has built-in support for packaging and deploying AWS Lambda functions. Some of these lambda
+Cfhighlander DSL processor has built-in support for packaging and deploying AWS Lambda functions. Some of these lambda
 functions may require shell command to be executed (e.g. pulling library dependencies) prior their packaging in ZIP archive format.
 Such commands are potential security risk, as they allow execution of arbitrary code, so for this reason user agreement is required
 e.g:
@@ -136,11 +136,11 @@ cfndsl templates. Check component configuration section for more details.
 
 #### dslcompile
 
-*dslcompile* will produce intermediary cfndsl templates. This is useful for debugging highlander components
+*dslcompile* will produce intermediary cfndsl templates. This is useful for debugging cfhighlander components
 
 #### publish
 
-*publish* command publishes highlander components source code to s3 location (compared to *cfpublish* which is publishing
+*publish* command publishes cfhighlander components source code to s3 location (compared to *cfpublish* which is publishing
 compiled cloudformation templates). Same CLI / DSL options apply as for *cfpublish* command. Version defaults to `latest`
 
 
@@ -408,4 +408,4 @@ so extension methods can be consumed within cfndsl template.
 
 Any extensions placed within `cfndsl_ext` folder will be 
 available in cfndsl templates of all components. Any extensions placed within `hl_ext` folder are 
-available in highlander templates of all components. 
+available in cfhighlander templates of all components. 

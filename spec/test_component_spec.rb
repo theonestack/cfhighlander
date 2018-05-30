@@ -1,5 +1,6 @@
-require_relative '../bin/highlander'
+require_relative '../bin/cfhighlander'
 require 'git'
+require 'pp'
 
 RSpec.describe HighlanderCli, "#run" do
 
@@ -15,7 +16,10 @@ RSpec.describe HighlanderCli, "#run" do
       end
       Git.clone 'https://github.com/theonestack/hl-component-test', wd, clone_opts
 
-      is_travis_pr = (ENV['TRAVIS'] and ENV['TRAVIS_PULL_REQUEST'].to_i > 0)
+      puts("Environment:")
+      pp ENV
+
+      is_travis_pr = ((ENV.key? 'TRAVIS') and (ENV['TRAVIS_PULL_REQUEST'].to_i > 0))
 
       Dir.chdir wd
       ARGV.clear
@@ -36,7 +40,7 @@ RSpec.describe HighlanderCli, "#run" do
       # if running within travis and caused by PR, there are no creds available, thus
       # we have to mock the azs
       if is_travis_pr
-        File.write 'az.mappings.yaml', default_maps.to_yaml
+        File.write "#{ENV['HIGHLANDER_WORKDIR']}/az.mappings.yaml", default_maps.to_yaml
       end
 
       result = HighlanderCli.start

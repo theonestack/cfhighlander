@@ -33,7 +33,7 @@ module Highlander
 
       def initialize(component)
 
-        @workdir = ENV['HIGHLANDER_WORKDIR']
+        @workdir = ENV['CFHIGHLANDER_WORKDIR']
         @component = component
         @sub_components = []
         @component_name = component.highlander_dsl.name.downcase

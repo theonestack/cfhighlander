@@ -2,7 +2,7 @@ require_relative './highlander.dsl'
 require 'fileutils'
 require 'git'
 
-LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.highlander/components"
+LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.cfhighlander/components"
 
 module Highlander
 
@@ -40,6 +40,7 @@ module Highlander
       def load_config()
         @config = {} if @config.nil?
         Dir["#{@component_dir}/*.config.yaml"].each do |config_file|
+          puts "Loading config for #{@name}:\n\tread #{config_file} "
           partial_config = YAML.load(File.read(config_file))
           unless partial_config.nil?
             @config.extend(partial_config)
