@@ -25,6 +25,7 @@ GEM
     git (1.4.0)
     highline (1.7.10)
     jmespath (1.4.0)
+    netaddr (1.5.1)
     rspec (3.7.0)
       rspec-core (~> 3.7.0)
       rspec-expectations (~> 3.7.0)
@@ -52,6 +53,7 @@ DEPENDENCIES
   cfndsl
   git (~> 1.4, < 2)
   highline (>= 1.7.10, < 1.8)
+  netaddr (~> 1.5, >= 1.5.1)
   rspec
   rubyzip (>= 1.2.1)
   thor
