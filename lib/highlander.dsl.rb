@@ -54,8 +54,12 @@ module Highlander
       end
 
       def Name(name)
-        @name = name
-        @config['component_name'] = name
+        # nested components always have their name dictated by parent
+        # component, defaulting to template name
+        if (not @config.key? 'nested_component')
+          @name = name
+          @config['component_name'] = name
+        end
       end
 
       def Description(description)
@@ -78,7 +82,7 @@ module Highlander
       end
 
 
-      def Component(name:, template:, param_values: {}, config: {}, export_config: {}, &block)
+      def Component(template:, name: template, param_values: {}, config: {}, export_config: {}, &block)
         puts "Initialize #{name} with template #{template}"
 
         # load component
@@ -147,7 +151,7 @@ module Highlander
       def loadComponents()
 
         # empty config overrides to start with
-        @config_overrides = Hash[@components.collect { |c| [c.name, {}] }]
+        @config_overrides = Hash[@components.collect { |c| [c.name, {'nested_component' => true}] }]
         @named_components = Hash[@components.collect { |c| [c.name, c] }]
 
         # populate overrides with master config defined overrides
@@ -257,7 +261,11 @@ module Highlander
         if (@config.key? 'components')
           @config['components'].each { |component_name, component_config|
             if component_config.key?('config')
-              @config_overrides[component_name].extend(component_config['config'])
+              if @config_overrides.key? component_name
+                @config_overrides[component_name].extend(component_config['config'])
+              else
+                STDERR.puts("WARN: Overriding config for non-existing component #{component_name}")
+              end
             end
           }
         end
@@ -368,9 +376,9 @@ module Highlander
         build_distribution_url
       end
 
-      def name=(value)
-        self.Name(value)
-      end
+      # def name=(value)
+      #   self.Name(value)
+      # end
 
       def build_distribution_url
         if not (@distribution_bucket.nil? or @distribution_prefix.nil?)
@@ -406,6 +414,7 @@ def HighlanderComponent(&block)
 
   unless @version.nil?
     instance.version = @version
+    instance.config['component_version'] = @version
   end
 
   unless @distribution_bucket.nil?
@@ -415,10 +424,9 @@ def HighlanderComponent(&block)
     instance.DistributionPrefix(@distribution_prefix)
   end
 
+  instance.name = @template
   instance.instance_eval(&block)
-  if instance.name.nil?
-    instance.name = @name
-  end
+
 
   # load sub-components
   instance.loadComponents

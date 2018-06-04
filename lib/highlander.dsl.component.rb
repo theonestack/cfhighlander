@@ -66,9 +66,10 @@ module Highlander
 
         # load component
         factory = Highlander::Factory::ComponentFactory.new(@component_sources)
-        @component_loaded = factory.findComponent(
+        @component_loaded = factory.loadComponentFromTemplate(
             @template,
-            @template_version
+            @template_version,
+            @name
         )
         @component_loaded.config.extend @config
 
@@ -176,7 +177,7 @@ module Highlander
         key_name = nil
 
         # priority 0: stack-level parameter of map name
-        stack_param_mapname = component.parameters.param_list.find { |p| p.name == mappings_name }
+        stack_param_mapname = component.parameters.param_list.find {|p| p.name == mappings_name}
         unless stack_param_mapname.nil?
           key_name = "Ref('#{mappings_name}')"
         end
@@ -195,7 +196,7 @@ module Highlander
           # could still be nil after this line
         end
 
-        value =  mapping_value(component: component,
+        value = mapping_value(component: component,
             provider_name: mappings_name,
             value_name: param.mapAttribute,
             key_name: key_name
@@ -223,10 +224,10 @@ module Highlander
 
         if resource_name.nil?
           # find by component
-          resource = component.components.find { |c| c.name == component_name }
+          resource = component.components.find {|c| c.name == component_name}
           resource_name = resource.name unless resource.nil?
           if resource_name.nil?
-            resource = component.components.find { |c| c.template == component_name }
+            resource = component.components.find {|c| c.template == component_name}
             resource_name = resource.name unless resource.nil?
           end
         end
