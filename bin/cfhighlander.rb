@@ -22,11 +22,11 @@ class HighlanderCli < Thor
 
   desc 'configcompile component[@version]', 'Compile Highlander components configuration'
 
-  def configcompile(component_name)
+  def configcompile(template_name)
 
     # find and load component
     component_loader = Highlander::Factory::ComponentFactory.new
-    component = component_loader.findComponent(component_name)
+    component = component_loader.loadComponentFromTemplate(template_name)
     component.load
 
     # compile cfndsl template
@@ -117,14 +117,14 @@ class HighlanderCli < Thor
   method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
       :desc => 'Distribution component version, defaults to latest'
 
-  def publish(component_name)
+  def publish(template_name)
     component_version = options[:version]
     distribution_bucket = options[:dstbucket]
     distribution_prefix = options[:dstprefix]
 
     # find and load component
     component_loader = Highlander::Factory::ComponentFactory.new
-    component = component_loader.findComponent(component_name)
+    component = component_loader.loadComponentFromTemplate(template_name)
     component.version = component_version
     component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
     component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
@@ -137,7 +137,7 @@ class HighlanderCli < Thor
 end
 
 # build component from passed cli options
-def build_component(options, component_name)
+def build_component(options, template_name)
 
   component_version = options[:version]
   distribution_bucket = options[:dstbucket]
@@ -145,7 +145,7 @@ def build_component(options, component_name)
 
   # find and load component
   component_loader = Highlander::Factory::ComponentFactory.new
-  component = component_loader.findComponent(component_name)
+  component = component_loader.loadComponentFromTemplate(template_name)
   component.version = component_version unless component_version.nil?
   component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
   component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
