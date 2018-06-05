@@ -86,7 +86,7 @@ module Highlander
         puts "Initialize #{name} with template #{template}"
 
         # load component
-        component = Highlander::Dsl::Component.new(self,
+        component = Highlander::Dsl::Subcomponent.new(self,
             name,
             template,
             param_values,
@@ -220,7 +220,7 @@ module Highlander
         }
 
         @dependson_components_templates.each do |template|
-          component = Highlander::Dsl::Component.new(self,
+          component = Highlander::Dsl::Subcomponent.new(self,
               template,
               template,
               {},
@@ -424,7 +424,7 @@ def HighlanderComponent(&block)
     instance.DistributionPrefix(@distribution_prefix)
   end
 
-  instance.name = @template
+  instance.name = @template.template_name
   instance.instance_eval(&block)
 
 

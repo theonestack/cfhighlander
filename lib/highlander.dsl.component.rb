@@ -16,7 +16,7 @@ module Highlander
     end
 
 
-    class Component < DslBase
+    class Subcomponent < DslBase
 
       attr_accessor :name,
           :template,

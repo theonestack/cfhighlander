@@ -5,7 +5,7 @@ module Highlander
 
   module Publisher
 
-    class Component
+    class ComponentPublisher
 
       def initialize(component, cleanup)
         @component = component
