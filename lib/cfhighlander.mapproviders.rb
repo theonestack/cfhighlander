@@ -1,4 +1,4 @@
-module Highlander
+module Cfhighlander
 
   ### Map Providers provide predefined maps or list of maps
   ### Aside from predefined mappings from providers

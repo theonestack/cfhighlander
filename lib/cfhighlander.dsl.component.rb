@@ -1,8 +1,8 @@
-require_relative './highlander.helper'
-require_relative './highlander.dsl.base'
-require_relative './highlander.factory'
+require_relative './cfhighlander.helper'
+require_relative './cfhighlander.dsl.base'
+require_relative './cfhighlander.factory'
 
-module Highlander
+module Cfhighlander
 
   module Dsl
 
@@ -65,7 +65,7 @@ module Highlander
         build_distribution_url
 
         # load component
-        factory = Highlander::Factory::ComponentFactory.new(@component_sources)
+        factory = Cfhighlander::Factory::ComponentFactory.new(@component_sources)
         @component_loaded = factory.loadComponentFromTemplate(
             @template,
             @template_version,
@@ -116,7 +116,7 @@ module Highlander
       def load_parameters
         component_dsl = @component_loaded.highlander_dsl
         component_dsl.parameters.param_list.each do |component_param|
-          param = Highlander::Dsl::SubcomponentParameter.new
+          param = Cfhighlander::Dsl::SubcomponentParameter.new
           param.name = component_param.name
           param.cfndsl_value = SubcomponentParamValueResolver.resolveValue(
               @parent,
@@ -135,16 +135,16 @@ module Highlander
 
         # check if there are values defined on component itself
         if sub_component.param_values.key?(param.name)
-          return Highlander::Helper.parameter_cfndsl_value(sub_component.param_values[param.name])
+          return Cfhighlander::Helper.parameter_cfndsl_value(sub_component.param_values[param.name])
         end
 
-        if param.class == Highlander::Dsl::StackParam
+        if param.class == Cfhighlander::Dsl::StackParam
           return self.resolveStackParamValue(component, sub_component, param)
-        elsif param.class == Highlander::Dsl::ComponentParam
+        elsif param.class == Cfhighlander::Dsl::ComponentParam
           return self.resolveComponentParamValue(component, sub_component, param)
-        elsif param.class == Highlander::Dsl::MappingParam
+        elsif param.class == Cfhighlander::Dsl::MappingParam
           return self.resolveMappingParamValue(component, sub_component, param)
-        elsif param.class == Highlander::Dsl::OutputParam
+        elsif param.class == Cfhighlander::Dsl::OutputParam
           return self.resolveOutputParamValue(component, sub_component, param)
         else
           raise "#{param.class} not resolvable to parameter value"

@@ -2,7 +2,7 @@ require 'aws-sdk-cloudformation'
 require 'aws-sdk-s3'
 require 'digest/md5'
 
-module Highlander
+module Cfhighlander
 
   module Cloudformation
 

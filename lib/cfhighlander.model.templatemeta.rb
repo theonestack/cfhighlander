@@ -1,4 +1,4 @@
-module Highlander
+module Cfhighlander
 
   module Model
 

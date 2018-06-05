@@ -1,7 +1,7 @@
 require 'zip'
 
 
-module Highlander
+module Cfhighlander
   module Util
     ###
     ### taken from https://github.com/rubyzip/rubyzip/tree/master/samples

@@ -1,6 +1,6 @@
 require 'yaml'
 
-module Highlander
+module Cfhighlander
 
   module Model
 
@@ -39,7 +39,7 @@ module Highlander
       def load_config()
         @config = {} if @config.nil?
         Dir["#{@component_dir}/*.config.yaml"].each do |config_file|
-          puts "Loading config for #{@name}:\n\tread #{config_file} "
+          puts "INFO Loading config for #{@name}: read file:#{config_file} "
           partial_config = YAML.load(File.read(config_file))
           unless partial_config.nil?
             @config.extend(partial_config)
@@ -64,8 +64,14 @@ module Highlander
           raise StandardError, 'http(s) sources not supported yet'
         end
 
+        legacy_cfhighlander_path = "#{@component_dir}/#{@template.template_name}.highlander.rb"
+        if File.exist? legacy_cfhighlander_path
+          STDERR.puts "DEPRECATED: #{legacy_cfhighlander_path} - Use *.cfhiglander.rb"
+          @highlander_dsl_path = legacy_cfhighlander_path
+        else
+          @highlander_dsl_path =  "#{@component_dir}/#{@template.template_name}.cfhighlander.rb"
+        end
 
-        @highlander_dsl_path = "#{@component_dir}/#{@template.template_name}.highlander.rb"
         @cfndsl_path = "#{@component_dir}/#{@template.template_name}.cfndsl.rb"
         candidate_mappings_path = "#{@component_dir}/*.mappings.yaml"
         candidate_dynamic_mappings_path = "#{@component_dir}/#{@template.template_name}.mappings.rb"

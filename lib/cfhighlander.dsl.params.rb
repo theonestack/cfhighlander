@@ -1,6 +1,6 @@
-require_relative './highlander.dsl.base'
+require_relative './cfhighlander.dsl.base'
 
-module Highlander
+module Cfhighlander
 
   module Dsl
     class Parameters < DslBase
