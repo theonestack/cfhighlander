@@ -1,6 +1,6 @@
 module Highlander
 
-  module Template
+  module Model
 
     class TemplateMetadata
 

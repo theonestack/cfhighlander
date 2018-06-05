@@ -1,10 +1,10 @@
 LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.cfhighlander/components"
 
-require_relative './highlander.template.metadata'
+require_relative './highlander.model.templatemeta'
 
 module Highlander
 
-  module Template
+  module Factory
 
     class TemplateFinder
 
@@ -134,7 +134,7 @@ module Highlander
 
 
         if not git_url.nil?
-          local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{template_location.gsub(':','_').gsub(/\/+/,'/')}/#{template_version}"
+          local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{template_location.gsub(':', '_').gsub(/\/+/, '/')}/#{template_version}"
           template_name, location = findTemplateGit(local_path, template_location, template_version, git_url, branch)
           if location.nil?
             raise "Could not resolve component #{template_location}@#{template_version}"
@@ -168,20 +168,14 @@ module Highlander
         # if component specified as git location
         if is_git_template
           new_template_name, new_version, candidate_git = tryFindTemplateGit(template_name, template_version_s)
-          return TemplateMetadata.new(
-              template_name: new_template_name,
-              template_version: new_version,
-              template_location: candidate_git) unless candidate_git.nil?
+          return build_meta(new_template_name, new_version, candidate_git) unless candidate_git.nil?
         end
 
         # if not git but has .snapshot lookup in default, it is allowed to reference default
         # snapshots
         if (not template_version.nil?) and template_version.end_with? '.snapshot'
           new_template_name, snapshot_candidate_location = findTemplateDefault(template_name, template_version_s)
-          return TemplateMetadata.new(
-              template_name: new_template_name,
-              template_version: template_version,
-              template_location: snapshot_candidate_location) unless snapshot_candidate_location.nil?
+          return build_meta(new_template_name, template_version, snapshot_candidate_location) unless snapshot_candidate_location.nil?
         end
 
         # try in all of the component sources
@@ -195,10 +189,7 @@ module Highlander
 
             s3_candidate = findTemplateS3(source, template_name, template_version_s)
             # at this point all component files are download to local file system and consumed from there
-            return TemplateMetadata.new(
-                template_name: template_name,
-                template_version: template_version,
-                template_location: s3_candidate) unless s3_candidate.nil?
+            return build_meta(template_name, template_version_s, s3_candidate) unless s3_candidate.nil?
 
           else
             # file system candidate
@@ -208,34 +199,29 @@ module Highlander
             candidate2_hl_path = "#{source}/#{template_name}.highlander.rb"
             puts "TRACE: Trying to load #{template_full_name} from #{candidate} ... "
             if File.exist?(candidate_hl_path)
-              return TemplateMetadata.new(
-                  template_name: template_name,
-                  template_version: template_version,
-                  template_location: candidate
-              )
+              return build_meta(template_name, template_version_s, candidate)
             end
             puts "TRACE: Trying to load #{template_full_name} from #{source} ... "
             # if component version is latest it is allowed to search in path
             # with no version component in it
             if File.exist?(candidate2_hl_path)
-              return TemplateMetadata.new(
-                  template_name: template_name,
-                  template_version: 'latest',
-                  template_location: source
-              )
+              return build_meta(template_name, 'latest', source)
             end unless template_version_s != 'latest'
           end
         end
 
         # try default component source on github
         template_name, default_candidate = findTemplateDefault(template_name, template_version_s)
-        return TemplateMetadata.new(
-            template_name: template_name,
-            template_version: template_version_s,
-            template_location: default_candidate
-        ) unless default_candidate.nil?
+        return build_meta(template_name, template_version_s, default_candidate) unless default_candidate.nil?
 
         return nil
+      end
+
+      def build_meta(template_name, template_version, template_location)
+        return Highlander::Model::TemplateMetadata.new(
+            template_name: template_name,
+            template_version: template_version,
+            template_location: template_location)
       end
 
     end
