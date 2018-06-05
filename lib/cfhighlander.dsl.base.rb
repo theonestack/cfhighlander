@@ -1,5 +1,5 @@
 
-module Highlander
+module Cfhighlander
 
   module Dsl
     class DslBase
@@ -15,7 +15,7 @@ module Highlander
           raise StandardError, "#{self} no config!"
         end
         return @config["#{method}"] unless @config["#{method}"].nil?
-        raise StandardError, "#{self}Unknown method or variable #{method} in Highlander template"
+        raise StandardError, "#{self} Unknown method or variable #{method} in Cfhighlander template"
       end
 
     end

@@ -12,7 +12,7 @@ require 'highline/import'
 require 'zip'
 require_relative './util/zip.util'
 
-module Highlander
+module Cfhighlander
 
   module Compiler
 
@@ -50,7 +50,7 @@ module Highlander
         end
 
         @component.highlander_dsl.components.each do |sub_component|
-          sub_component_compiler = Highlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
+          sub_component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
           sub_component_compiler.component_name = sub_component.name
           @sub_components << sub_component_compiler
         end
@@ -281,7 +281,7 @@ module Highlander
               end
             end
             File.delete full_destination_path if File.exist? full_destination_path
-            zip_generator = Highlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
+            zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
             zip_generator.write
 
           end

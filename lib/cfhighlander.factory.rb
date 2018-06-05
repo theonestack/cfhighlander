@@ -1,11 +1,11 @@
-require_relative './highlander.dsl'
-require_relative './highlander.factory.templatefinder'
-require_relative './highlander.model.component'
+require_relative './cfhighlander.dsl'
+require_relative './cfhighlander.factory.templatefinder'
+require_relative './cfhighlander.model.component'
 require 'fileutils'
 require 'git'
 
 
-module Highlander
+module Cfhighlander
 
   module Factory
 
@@ -14,18 +14,20 @@ module Highlander
       attr_accessor :component_sources
 
       def initialize(component_sources = [])
-        @template_finder = Highlander::Factory::TemplateFinder.new(component_sources)
+        @template_finder = Cfhighlander::Factory::TemplateFinder.new(component_sources)
+        @component_sources = component_sources
       end
 
       # Find component and given list of sources
-      # @return [Highlander::Factory::Component]
+      # @return [Cfhighlander::Factory::Component]
       def loadComponentFromTemplate(template_name, template_version = nil, component_name = nil)
 
         template_meta = @template_finder.findTemplate(template_name, template_version)
 
-        raise StandardError, "highlander template #{template_name}@#{component_version_s} not located" +
+        raise StandardError, "highlander template #{template_name}@#{template_version} not located" +
             " in sources #{@component_sources}" if template_meta.nil?
 
+        component_name = template_name if component_name.nil?
         return buildComponentFromLocation(template_meta, component_name)
 
       end

@@ -8,11 +8,11 @@ Dir["#{extensions_folder}/*.rb"].each { |f|
 
 # require libraries
 
-require_relative './highlander.dsl.base'
-require_relative './highlander.dsl.params'
-require_relative './highlander.dsl.component'
+require_relative './cfhighlander.dsl.base'
+require_relative './cfhighlander.dsl.params'
+require_relative './cfhighlander.dsl.component'
 
-module Highlander
+module Cfhighlander
 
   module Dsl
 
@@ -83,10 +83,10 @@ module Highlander
 
 
       def Component(template:, name: template, param_values: {}, config: {}, export_config: {}, &block)
-        puts "Initialize #{name} with template #{template}"
+        puts "INFO: Requested subcomponent #{name} with template #{template}"
 
         # load component
-        component = Highlander::Dsl::Subcomponent.new(self,
+        component = Cfhighlander::Dsl::Subcomponent.new(self,
             name,
             template,
             param_values,
@@ -185,10 +185,10 @@ module Highlander
               .param_list.each do |param|
 
             # add stack parameters
-            if param.class == Highlander::Dsl::StackParam
+            if param.class == Cfhighlander::Dsl::StackParam
               # sub-component stack param becomes top-level component param
               param_name = param.is_global ? param.name : "#{component.name}#{param.name}"
-              stack_param = Highlander::Dsl::ComponentParam.new(
+              stack_param = Cfhighlander::Dsl::ComponentParam.new(
                   param_name,
                   param.type,
                   param.default_value,
@@ -198,7 +198,7 @@ module Highlander
             end unless component.param_values.key? param.name
 
             # for map parameters add maps
-            if param.class == Highlander::Dsl::MappingParam
+            if param.class == Cfhighlander::Dsl::MappingParam
               if not param.mapProvider.nil?
                 maps = param.mapProvider.getMaps(component.component_loaded.config)
                 maps.each do |name, map|
@@ -220,7 +220,7 @@ module Highlander
         }
 
         @dependson_components_templates.each do |template|
-          component = Highlander::Dsl::Subcomponent.new(self,
+          component = Cfhighlander::Dsl::Subcomponent.new(self,
               template,
               template,
               {},
@@ -303,11 +303,11 @@ module Highlander
                       if (not config_receiver_component.export_config.nil?) and (config_receiver_component.export_config.key? component.template)
                         allow_from_component_name = config_receiver_component.export_config[component.template]
                         if allow_from_component_name == component.name
-                          puts("Exporting key #{global_export_key} from component #{component.name} to #{cname}")
+                          puts("INFO: Exporting key #{global_export_key} from component #{component.name} to #{cname}")
                           co[global_export_key] = cl.config[global_export_key]
                         end
                       else
-                        puts("Exporting key #{global_export_key} from component #{component.name} to #{cname}")
+                        puts("INFO: Exporting key #{global_export_key} from component #{component.name} to #{cname}")
                         co[global_export_key] = cl.config[global_export_key]
                       end
                     end
@@ -400,7 +400,7 @@ module Highlander
 end
 
 def HighlanderComponent(&block)
-  instance = Highlander::Dsl::HighlanderTemplate.new
+  instance = Cfhighlander::Dsl::HighlanderTemplate.new
 
   puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
       "\n\tConfig:#{@config}"

@@ -1,14 +1,16 @@
-require_relative '../lib/highlander.mapproviders'
+require_relative '../lib/cfhighlander.mapproviders'
 
 # Return mapping provider as class
-def mappings_provider(provider_name)
+def mappings_provider(provider_name, is_legacy = false)
   return nil if provider_name.nil?
   provider = nil
-  providers = Object.const_get('Highlander').const_get('MapProviders')
+  module_name = is_legacy ? 'Highlander': 'Cfhighlander'
+  providers = Object.const_get(module_name).const_get('MapProviders')
   begin
     providers.const_get(provider_name)
   rescue NameError => e
-    if e.to_s.include? 'uninitialized constant Highlander::MapProviders::'
+    if e.to_s.include? "uninitialized constant #{module_name}::MapProviders::"
+      return mappings_provider(provider_name, true) unless is_legacy
       return nil
     end
     STDERR.puts(e.to_s)

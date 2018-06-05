@@ -1,8 +1,8 @@
-LOCAL_HIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.cfhighlander/components"
+LOCAL_CFHIGHLANDER_CACHE_LOCATION = "#{ENV['HOME']}/.cfhighlander/components"
 
-require_relative './highlander.model.templatemeta'
+require_relative './cfhighlander.model.templatemeta'
 
-module Highlander
+module Cfhighlander
 
   module Factory
 
@@ -13,7 +13,7 @@ module Highlander
         ## Then search for cached $HOME/.highlander/components
         ## Then search in sources given by dsl
         default_locations = [
-            LOCAL_HIGHLANDER_CACHE_LOCATION,
+            LOCAL_CFHIGHLANDER_CACHE_LOCATION,
             File.expand_path('components'),
             File.expand_path('.')
         ]
@@ -27,6 +27,7 @@ module Highlander
       def findTemplateDefault(template_name, component_version)
         default_lookup_url = 'https://github.com/theonestack'
         default_lookup_url = ENV['HIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'] if ENV.key? 'HIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'
+        default_lookup_url = ENV['CFHIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'] if ENV.key? 'CFHIGHLANDER_DEFAULT_COMPONENT_GIT_LOOKUP'
 
         git_url = "#{default_lookup_url}/hl-component-#{template_name}"
 
@@ -35,7 +36,7 @@ module Highlander
         else
           branch = component_version
         end
-        local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{template_name}/#{component_version}"
+        local_path = "#{LOCAL_CFHIGHLANDER_CACHE_LOCATION}/#{template_name}/#{component_version}"
         return findTemplateGit(local_path, template_name, component_version, git_url, branch)
 
       end
@@ -53,6 +54,13 @@ module Highlander
           if not Dir.glob("#{cache_path}*.highlander.rb").empty?
             # if cache exists, just return from cache
             component_name = Dir.glob("#{cache_path}*.highlander.rb")[0].gsub(cache_path, '').gsub('.highlander.rb', '')
+            STDERR.puts("DEPRECATED: #{component_name}: Use *.cfhighlander.rb template file name pattern")
+            return component_name, cache_path
+          end
+
+          if not Dir.glob("#{cache_path}*.cfhighlander.rb").empty?
+            # if cache exists, just return from cache
+            component_name = Dir.glob("#{cache_path}*.cfhighlander.rb")[0].gsub(cache_path, '').gsub('.highlander.rb', '')
             return component_name, cache_path
           end
 
@@ -71,20 +79,20 @@ module Highlander
         end
       end
 
-      def findTemplateS3(s3_location, component_name, component_version)
+      def findTemplateS3(s3_location, component_name, component_version, use_legacy_extension = true)
         parts = s3_location.split('/')
         bucket = parts[2]
         prefix = parts[3]
         s3_key = "#{prefix}/#{component_name}/#{component_version}/#{component_name}.highlander.rb"
         s3_prefix = "#{prefix}/#{component_name}/#{component_version}/"
-        local_destination = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{component_name}/#{component_version}"
+        local_destination = "#{LOCAL_CFHIGHLANDER_CACHE_LOCATION}/#{component_name}/#{component_version}"
         begin
           s3 = Aws::S3::Client.new({ region: s3_bucket_region(bucket) })
           FileUtils.mkdir_p local_destination unless Dir.exist? local_destination
 
           hl_content = s3.get_object({ bucket: bucket,
               key: s3_key,
-              response_target: "#{local_destination}/#{component_name}.highlander.rb"
+              response_target: "#{local_destination}/#{component_name}.#{use_legacy_extension ? 'highlander' : 'cfhighlander'}.rb"
           })
           # if code execution got so far we consider file exists and download it locally
           component_files = s3.list_objects_v2({ bucket: bucket, prefix: s3_prefix })
@@ -98,9 +106,15 @@ module Highlander
             s3.get_object({ bucket: bucket, key: s3_object.key, response_target: destination_file })
             print " [OK] \n"
           }
+          if use_legacy_extension
+            STDERR.puts "DEPRECATED: s3 load #{component_name} with *.highlander.rb template file name pattern"
+          end
           return local_destination
         rescue => e
           # this handles both nonexisting key and bucket
+          if use_legacy_extension
+            return findTemplateS3(s3_location, component_name, component_version, false)
+          end
           puts("#{component_name} not found in s3://#{bucket}/#{prefix}")
           STDERR.puts(e.to_s) unless e.message.include? 'does not exist'
           return nil
@@ -134,7 +148,7 @@ module Highlander
 
 
         if not git_url.nil?
-          local_path = "#{LOCAL_HIGHLANDER_CACHE_LOCATION}/#{template_location.gsub(':', '_').gsub(/\/+/, '/')}/#{template_version}"
+          local_path = "#{LOCAL_CFHIGHLANDER_CACHE_LOCATION}/#{template_location.gsub(':', '_').gsub(/\/+/, '/')}/#{template_version}"
           template_name, location = findTemplateGit(local_path, template_location, template_version, git_url, branch)
           if location.nil?
             raise "Could not resolve component #{template_location}@#{template_version}"
@@ -196,15 +210,18 @@ module Highlander
             candidate = "#{source}/#{template_name}"
             candidate = "#{candidate}/#{template_version}" unless template_version.nil?
             candidate_hl_path = "#{candidate}/#{template_name}.highlander.rb"
+            candidate_cfhl_path = "#{candidate}/#{template_name}.cfhighlander.rb"
             candidate2_hl_path = "#{source}/#{template_name}.highlander.rb"
+            candidate2_cfhl_path = "#{source}/#{template_name}.cfhighlander.rb"
             puts "TRACE: Trying to load #{template_full_name} from #{candidate} ... "
-            if File.exist?(candidate_hl_path)
+            if (File.exist?(candidate_hl_path) or File.exist?(candidate_cfhl_path))
               return build_meta(template_name, template_version_s, candidate)
             end
+
             puts "TRACE: Trying to load #{template_full_name} from #{source} ... "
             # if component version is latest it is allowed to search in path
             # with no version component in it
-            if File.exist?(candidate2_hl_path)
+            if (File.exist?(candidate2_hl_path) or File.exist?(candidate2_cfhl_path))
               return build_meta(template_name, 'latest', source)
             end unless template_version_s != 'latest'
           end
@@ -218,7 +235,7 @@ module Highlander
       end
 
       def build_meta(template_name, template_version, template_location)
-        return Highlander::Model::TemplateMetadata.new(
+        return Cfhighlander::Model::TemplateMetadata.new(
             template_name: template_name,
             template_version: template_version,
             template_location: template_location)
