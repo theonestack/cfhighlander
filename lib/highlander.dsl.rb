@@ -16,7 +16,7 @@ module Highlander
 
   module Dsl
 
-    class Template < DslBase
+    class HighlanderTemplate < DslBase
 
       attr_accessor :mappings,
           :parameters,
@@ -400,7 +400,7 @@ module Highlander
 end
 
 def HighlanderComponent(&block)
-  instance = Highlander::Dsl::Template.new
+  instance = Highlander::Dsl::HighlanderTemplate.new
 
   puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
       "\n\tConfig:#{@config}"

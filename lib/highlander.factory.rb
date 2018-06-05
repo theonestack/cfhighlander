@@ -110,7 +110,14 @@ module Highlander
 
 
         if @highlander_dsl.description.nil?
-          @highlander_dsl.Description("#{@highlander_dsl.name} - #{@highlander_dsl.version}")
+          if template.template_name == @name
+            description = "#{@name}@#{template.template_version} - v#{@highlander_dsl.version}"
+          else
+            description = "#{@name} - v#{@highlander_dsl.version}"
+            description += " (#{template.template_name}@#{template.template_version})"
+          end
+
+          @highlander_dsl.Description(description)
         end
 
         # set (override) distribution options
@@ -142,7 +149,7 @@ module Highlander
 
 
       def initialize(component_sources = [])
-        @template_finder = Highlander::Template::Finder.new(component_sources)
+        @template_finder = Highlander::Template::TemplateFinder.new(component_sources)
       end
 
       # Find component and given list of sources

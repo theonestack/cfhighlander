@@ -2,7 +2,7 @@ module Highlander
 
   module Template
 
-    class Metadata
+    class TemplateMetadata
 
       @template_name
       @template_version

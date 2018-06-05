@@ -6,7 +6,7 @@ module Highlander
 
   module Template
 
-    class Finder
+    class TemplateFinder
 
       def initialize(component_sources = [])
         ## First look in local $PWD/components folder
@@ -168,7 +168,7 @@ module Highlander
         # if component specified as git location
         if is_git_template
           new_template_name, new_version, candidate_git = tryFindTemplateGit(template_name, template_version_s)
-          return Metadata.new(
+          return TemplateMetadata.new(
               template_name: new_template_name,
               template_version: new_version,
               template_location: candidate_git) unless candidate_git.nil?
@@ -178,7 +178,7 @@ module Highlander
         # snapshots
         if (not template_version.nil?) and template_version.end_with? '.snapshot'
           new_template_name, snapshot_candidate_location = findTemplateDefault(template_name, template_version_s)
-          return Metadata.new(
+          return TemplateMetadata.new(
               template_name: new_template_name,
               template_version: template_version,
               template_location: snapshot_candidate_location) unless snapshot_candidate_location.nil?
@@ -195,7 +195,7 @@ module Highlander
 
             s3_candidate = findTemplateS3(source, template_name, template_version_s)
             # at this point all component files are download to local file system and consumed from there
-            return Metadata.new(
+            return TemplateMetadata.new(
                 template_name: template_name,
                 template_version: template_version,
                 template_location: s3_candidate) unless s3_candidate.nil?
@@ -208,7 +208,7 @@ module Highlander
             candidate2_hl_path = "#{source}/#{template_name}.highlander.rb"
             puts "TRACE: Trying to load #{template_full_name} from #{candidate} ... "
             if File.exist?(candidate_hl_path)
-              return Metadata.new(
+              return TemplateMetadata.new(
                   template_name: template_name,
                   template_version: template_version,
                   template_location: candidate
@@ -218,9 +218,9 @@ module Highlander
             # if component version is latest it is allowed to search in path
             # with no version component in it
             if File.exist?(candidate2_hl_path)
-              return Metadata.new(
+              return TemplateMetadata.new(
                   template_name: template_name,
-                  template_version: template_version,
+                  template_version: 'latest',
                   template_location: source
               )
             end unless template_version_s != 'latest'
@@ -229,7 +229,7 @@ module Highlander
 
         # try default component source on github
         template_name, default_candidate = findTemplateDefault(template_name, template_version_s)
-        return Metadata.new(
+        return TemplateMetadata.new(
             template_name: template_name,
             template_version: template_version_s,
             template_location: default_candidate
