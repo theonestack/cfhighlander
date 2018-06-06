@@ -43,13 +43,15 @@ module Cfhighlander
         @lambdas_processed = false
         @silent_mode = false
         @lambda_src_paths = []
+        @config_yaml_path = nil
+        @cfn_model = nil
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
           Dir["#{global_extensions_folder}/*.rb"].each { |f| @@global_extensions_paths << f }
         end
 
-        @component.highlander_dsl.components.each do |sub_component|
+        @component.highlander_dsl.subcomponents.each do |sub_component|
           sub_component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
           sub_component_compiler.component_name = sub_component.name
           @sub_components << sub_component_compiler
@@ -67,7 +69,7 @@ module Cfhighlander
         dsl = @component.highlander_dsl
         component_cfndsl = @component.cfndsl_content
 
-        @component.highlander_dsl.components.each { |sc|
+        @component.highlander_dsl.subcomponents.each { |sc|
           sc.distribution_format = out_format
         }
 
@@ -100,33 +102,38 @@ module Cfhighlander
 
       end
 
-      def compileCloudFormation(format = 'yaml')
-
-
+      def evaluateCloudFormation(format = 'yaml')
         #compile cfndsl templates first
         compileCfnDsl format unless @cfndsl_compiled
 
+        # write config
+        cfndsl_opts = []
+        cfndsl_opts.push([:yaml, @config_yaml_path])
+
+        # grab cfndsl model
+        model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
+        @cfn_model = model
+        return model
+      end
+
+      def compileCloudFormation(format = 'yaml')
+
         dsl = @component.highlander_dsl
-        component_cfndsl = @component.cfndsl_content
 
         # create out dir if not there
         @cfn_output_location = "#{@workdir}/out/#{format}"
         output_dir = @cfn_output_location
         FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 
-        # write config
-        config_yaml_path = writeConfig
-
 
         # compile templates
-        output_path = "#{output_dir}/#{component_name}.compiled.#{format}"
+        output_path = "#{output_dir}/#{@component_name}.compiled.#{format}"
         @cfn_template_paths << output_path
         # configure cfndsl
-        cfndsl_opts = []
-        cfndsl_opts.push([:yaml, config_yaml_path])
+
 
         # grab cfndsl model
-        model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
+        model = evaluateCloudFormation
 
         # write resulting cloud formation template
         if format == 'json'
@@ -165,7 +172,8 @@ module Cfhighlander
           end
         end
         @config_written = true
-        config_yaml_path
+        @config_yaml_path = config_yaml_path
+        return @config_yaml_path
       end
 
       def processLambdas()

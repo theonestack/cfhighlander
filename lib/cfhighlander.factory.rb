@@ -1,4 +1,4 @@
-require_relative './cfhighlander.dsl'
+require_relative './cfhighlander.dsl.template'
 require_relative './cfhighlander.factory.templatefinder'
 require_relative './cfhighlander.model.component'
 require 'fileutils'

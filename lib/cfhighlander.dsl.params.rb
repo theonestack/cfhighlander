@@ -3,6 +3,8 @@ require_relative './cfhighlander.dsl.base'
 module Cfhighlander
 
   module Dsl
+
+    # dsl statements
     class Parameters < DslBase
 
       attr_accessor :param_list
@@ -12,7 +14,7 @@ module Cfhighlander
       end
 
       def addParam(param)
-        existing_param = @param_list.find { |p| p.name == param.name }
+        existing_param = @param_list.find {|p| p.name == param.name}
         if not existing_param.nil?
           puts "Parameter being overwritten. Updating parameter #{param.name} with new definition..."
           @param_list[@param_list.index(existing_param)] = param
@@ -21,62 +23,52 @@ module Cfhighlander
         end
       end
 
-      def StackParam(name, defaultValue='', isGlobal: false, noEcho: false)
-        param = StackParam.new(name, 'String', defaultValue)
-        param.is_global = isGlobal
+      def StackParam(name, defaultValue = '', isGlobal: false, noEcho: false, type: 'String')
+        STDERR.puts "DEPRECATED: StackParam #{name} - Use ComponentParam instead"
+        ComponentParam(name, defaultValue, isGlobal: isGlobal, noEcho: noEcho, type: type)
+      end
+
+      def OutputParam(component:, name:, isGlobal: false, noEcho: false, type: 'String')
+        STDERR.puts ("DEPRECATED: OutputParam #{name} - Use ComponentParam instead. Outputut params are " +
+            "autorwired by name only, with component disregarded")
+        ComponentParam(name, '', isGlobal: isGlobal, noEcho: noEcho, type: type)
+      end
+
+      def ComponentParam(name, defaultValue = '', isGlobal: false, noEcho: false, type: 'String', allowedValues: nil)
+        param = Parameter.new(name, type, defaultValue, noEcho, isGlobal, allowedValues)
         param.config = @config
-        param.no_echo = noEcho
         addParam param
       end
 
-      def ComponentParam(name, defaultValue='')
-        param = ComponentParam.new(name, 'String', defaultValue)
-        param.config = @config
-        addParam param
-      end
-
-      def MappingParam(name, defaultValue='', &block)
+      def MappingParam(name, defaultValue = '', &block)
         param = MappingParam.new(name, 'String', defaultValue)
         param.config = @config
         param.instance_eval(&block)
         addParam param
       end
 
-      def OutputParam(component:, name:, default: '')
-        param = OutputParam.new(component, name, default)
-        param.config = @config
-        addParam param
-      end
+
     end
 
+    # model classes
     class Parameter < DslBase
-      attr_accessor :name, :type, :default_value, :no_echo
+      attr_accessor :name,
+          :type,
+          :default_value,
+          :no_echo,
+          :is_global,
+          :provided_value,
+          :allowed_values
 
-      def initialize(name, type, defaultValue, noEcho = false)
+      def initialize(name, type, defaultValue, noEcho = false, isGlobal = false, allowed_values = nil)
         @no_echo = noEcho
         @name = name
         @type = type
         @default_value = defaultValue
+        @is_global = isGlobal
+        @allowed_values = allowed_values
       end
-    end
 
-    class StackParam < Parameter
-      attr_accessor :is_global
-    end
-
-    class ComponentParam < Parameter
-
-    end
-
-    class OutputParam < Parameter
-      attr_accessor :component
-
-      def initialize(component, name, default)
-        @component = component
-        @name = name
-        @default_value = default
-        @type = 'String'
-      end
     end
 
     class MappingParam < Parameter

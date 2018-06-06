@@ -22,6 +22,8 @@ module Cfhighlander
           :cfndsl_ext_files,
           :lambda_src_files
 
+      attr_reader :cfn_model, :outputs
+
       def initialize(template_meta, component_name)
         @template = template_meta
         @name = component_name
@@ -69,7 +71,7 @@ module Cfhighlander
           STDERR.puts "DEPRECATED: #{legacy_cfhighlander_path} - Use *.cfhiglander.rb"
           @highlander_dsl_path = legacy_cfhighlander_path
         else
-          @highlander_dsl_path =  "#{@component_dir}/#{@template.template_name}.cfhighlander.rb"
+          @highlander_dsl_path = "#{@component_dir}/#{@template.template_name}.cfhighlander.rb"
         end
 
         @cfndsl_path = "#{@component_dir}/#{@template.template_name}.cfndsl.rb"
@@ -88,10 +90,7 @@ module Cfhighlander
         @config['component_name'] = @name
         @config['template_name'] = @template.template_name
         @config['template_version'] = @template.template_version
-        # allow override of components
-        # config_override.each do |key, value|
-        #   @config[key] = value
-        # end unless config_override.nil?
+
 
         Dir[candidate_mappings_path].each do |mapping_file|
           mappings = YAML.load(File.read(mapping_file))
@@ -144,6 +143,31 @@ module Cfhighlander
         end
 
         loadDepandantExt()
+      end
+
+      # evaluates cfndsl with current config
+      def eval_cfndsl
+        compiler = Cfhighlander::Compiler::ComponentCompiler.new self
+        @cfn_model = compiler.evaluateCloudFormation().as_json
+        @outputs = (
+        if @cfn_model.key? 'Outputs'
+        then
+          @cfn_model['Outputs'].map {|k, v| ComponentOutput.new self, k, v}
+        else
+          []
+        end
+        )
+      end
+    end
+
+    class ComponentOutput
+
+      attr_reader :component, :name, :value
+
+      def initialize(component, name, value)
+        @component = component
+        @name = name
+        @value = value
       end
     end
 

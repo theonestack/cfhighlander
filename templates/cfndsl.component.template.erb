@@ -8,7 +8,7 @@ CloudFormation do
 <% end %>
 
 # render subcomponents
-<% for @component in dsl.components %>
+<% for @component in dsl.subcomponents %>
     CloudFormation_Stack('<%= @component.name.gsub('-','').gsub('_','') %>') do
     TemplateURL '<%= @component.distribution_url %>'
     Parameters ({
@@ -37,6 +37,9 @@ CloudFormation do
       Default '<%= @param.default_value %>'
       <% unless @param.no_echo.nil? %>
       NoEcho <%= @param.no_echo.to_s %>
+      <% end %>
+      <% unless @param.allowed_values.nil? %>
+        AllowedValues <%= @param.allowed_values.to_s %>
       <% end %>
     end
 <% end %>
