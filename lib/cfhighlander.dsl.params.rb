@@ -31,13 +31,15 @@ module Cfhighlander
       def OutputParam(component:, name:, isGlobal: false, noEcho: false, type: 'String')
         STDERR.puts ("DEPRECATED: OutputParam #{name} - Use ComponentParam instead. Outputut params are " +
             "autorwired by name only, with component disregarded")
-        ComponentParam(name, '', isGlobal: isGlobal, noEcho: noEcho, type: type)
+        param = ComponentParam(name, '', isGlobal: isGlobal, noEcho: noEcho, type: type)
+        param.provided_value = "#{component}.#{name}"
       end
 
       def ComponentParam(name, defaultValue = '', isGlobal: false, noEcho: false, type: 'String', allowedValues: nil)
         param = Parameter.new(name, type, defaultValue, noEcho, isGlobal, allowedValues)
         param.config = @config
         addParam param
+        return param
       end
 
       def MappingParam(name, defaultValue = '', &block)
@@ -67,6 +69,7 @@ module Cfhighlander
         @default_value = defaultValue
         @is_global = isGlobal
         @allowed_values = allowed_values
+        @provided_value = nil
       end
 
     end

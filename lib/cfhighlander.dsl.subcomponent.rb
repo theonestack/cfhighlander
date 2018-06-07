@@ -135,12 +135,27 @@ module Cfhighlander
 
         print("INFO Resolving parameter #{component.name} -> #{sub_component.name}.#{param.name}: ")
 
+        # rule 0: this rule is here for legacy reasons and OutputParam. It should be deprecated
+        # once all hl-components- repos remove any references to OutputParam
+        if not param.provided_value.nil?
+          component_name = param.provided_value.split('.')[0]
+          output_name = param.provided_value.split('.')[1]
+          source_component = component.subcomponents.find {|c| c.name == component_name}
+          if source_component.nil?
+            source_component = component.subcomponents.find {|c| c.component_loaded.template.template_name == component_name}
+          end
+          return CfnDsl::Fn.new('GetAtt', [
+              source_component.name,
+              "Outputs.#{output_name}"
+          ]).to_json
+        end
+
         # rule 1: check if there are values defined on component itself
         if sub_component.param_values.key?(param.name)
           puts " parameter value provided "
 
           param_value = sub_component.param_values[param.name]
-          if param_value.include? '.'
+          if param_value.is_a? String and param_value.include? '.'
             source_component_name = param_value.split('.')[0]
             source_output = param_value.split('.')[1]
             source_component = component.subcomponents.find {|sc| sc.name == source_component_name}
