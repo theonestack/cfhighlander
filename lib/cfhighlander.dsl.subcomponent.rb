@@ -1,6 +1,7 @@
 require_relative './cfhighlander.helper'
 require_relative './cfhighlander.dsl.base'
 require_relative './cfhighlander.factory'
+require 'cfndsl'
 
 module Cfhighlander
 
@@ -14,7 +15,6 @@ module Cfhighlander
       end
 
     end
-
 
     class Subcomponent < DslBase
 
@@ -100,9 +100,6 @@ module Cfhighlander
       end
 
       def load(component_config_override = {})
-        # check for component config on parent
-        parent = @parent
-
         # Highest priority is DSL defined configuration
         component_config_override.extend @config
 
@@ -111,9 +108,13 @@ module Cfhighlander
         @component_loaded.load @component_config_override
       end
 
+      def parameter(name:, value:)
+        @param_values[name] = value
+      end
+
       # Parameters should be lazy loaded, that is late-binding should happen once
       # all parameters and mappings are known
-      def load_parameters
+      def resolve_parameter_values(available_outputs)
         component_dsl = @component_loaded.highlander_dsl
         component_dsl.parameters.param_list.each do |component_param|
           param = Cfhighlander::Dsl::SubcomponentParameter.new
@@ -121,7 +122,8 @@ module Cfhighlander
           param.cfndsl_value = SubcomponentParamValueResolver.resolveValue(
               @parent,
               self,
-              component_param)
+              component_param,
+              available_outputs)
           @parameters << param
         end
       end
@@ -129,40 +131,77 @@ module Cfhighlander
     end
 
     class SubcomponentParamValueResolver
-      def self.resolveValue(component, sub_component, param)
+      def self.resolveValue(component, sub_component, param, available_outputs)
 
-        puts("Resolving parameter #{component.name} -> #{sub_component.name}.#{param.name}")
+        print("INFO Resolving parameter #{component.name} -> #{sub_component.name}.#{param.name}: ")
 
-        # check if there are values defined on component itself
+        # rule 0: this rule is here for legacy reasons and OutputParam. It should be deprecated
+        # once all hl-components- repos remove any references to OutputParam
+        if not param.provided_value.nil?
+          component_name = param.provided_value.split('.')[0]
+          output_name = param.provided_value.split('.')[1]
+          source_component = component.subcomponents.find {|c| c.name == component_name}
+          if source_component.nil?
+            source_component = component.subcomponents.find {|c| c.component_loaded.template.template_name == component_name}
+          end
+          return CfnDsl::Fn.new('GetAtt', [
+              source_component.name,
+              "Outputs.#{output_name}"
+          ]).to_json
+        end
+
+        # rule 1: check if there are values defined on component itself
         if sub_component.param_values.key?(param.name)
-          return Cfhighlander::Helper.parameter_cfndsl_value(sub_component.param_values[param.name])
+          puts " parameter value provided "
+
+          param_value = sub_component.param_values[param.name]
+          if param_value.is_a? String and param_value.include? '.'
+            source_component_name = param_value.split('.')[0]
+            source_output = param_value.split('.')[1]
+            source_component = component.subcomponents.find {|sc| sc.name == source_component_name}
+            # if source component exists
+            if not source_component.nil?
+              if source_component_name == sub_component.name
+                STDERR.puts "WARNING: Parameter value on component #{source_component_name} references component itself: #{param_value}"
+              else
+                return CfnDsl::Fn.new('GetAtt', [
+                    source_component_name,
+                    "Outputs.#{source_output}"
+                ]).to_json
+              end
+            else
+              return Cfhighlander::Helper.parameter_cfndsl_value(param_value)
+            end
+          else
+            return Cfhighlander::Helper.parameter_cfndsl_value(sub_component.param_values[param.name])
+          end
         end
 
-        if param.class == Cfhighlander::Dsl::StackParam
-          return self.resolveStackParamValue(component, sub_component, param)
-        elsif param.class == Cfhighlander::Dsl::ComponentParam
-          return self.resolveComponentParamValue(component, sub_component, param)
-        elsif param.class == Cfhighlander::Dsl::MappingParam
+        # rule 1.1 mapping parameters are handled differently.
+        # TODO wire mapping parameters outside of component
+        if param.class == Cfhighlander::Dsl::MappingParam
+          puts " mapping parameter"
           return self.resolveMappingParamValue(component, sub_component, param)
-        elsif param.class == Cfhighlander::Dsl::OutputParam
-          return self.resolveOutputParamValue(component, sub_component, param)
-        else
-          raise "#{param.class} not resolvable to parameter value"
         end
-      end
 
-      def self.resolveStackParamValue(component, sub_component, param)
-        param_name = param.is_global ? param.name : "#{sub_component.name}#{param.name}"
-        return "Ref('#{param_name}')"
-      end
+        # rule #2: match output values from other components
+        #          by parameter name
+        if available_outputs.key? param.name
+          component_name = available_outputs[param.name].component.name
+          puts " resolved as output of #{component_name}"
+          return CfnDsl::Fn.new('GetAtt', [
+              component_name,
+              "Outputs.#{param.name}"
+          ]).to_json
+        end
 
-      def self.resolveComponentParamValue(component, sub_component, param)
-        # check component config for param value
-        # TODO
-        # check stack config for param value
-        # TODO
-        # return default value
-        return "'#{param.default_value}'"
+        # by default bubble parameter and resolve as reference on upper level
+        propagated_param = param.clone
+        propagated_param.name = "#{sub_component.name}#{param.name}" unless param.is_global
+        component.parameters.addParam propagated_param
+        puts " no autowiring candidates, propagate parameter to parent"
+        return CfnDsl::RefDefinition.new(propagated_param.name).to_json
+
       end
 
       def self.resolveMappingParamValue(component, sub_component, param)
@@ -208,36 +247,8 @@ module Cfhighlander
         end
 
         return value
-
-
-        return value
       end
 
-      def self.resolveOutputParamValue(component, sub_component, param)
-        component_name = param.component
-        resource_name = nil
-        if not sub_component.export_config.nil?
-          if sub_component.export_config.key? component_name
-            resource_name = sub_component.export_config[component_name]
-          end
-        end
-
-        if resource_name.nil?
-          # find by component
-          resource = component.components.find {|c| c.name == component_name}
-          resource_name = resource.name unless resource.nil?
-          if resource_name.nil?
-            resource = component.components.find {|c| c.template == component_name}
-            resource_name = resource.name unless resource.nil?
-          end
-        end
-
-        if resource_name.nil?
-          raise "#{sub_component.name}.Params.#{param.name}: Failed to resolve OutputParam '#{param.name}' with source '#{component_name}'. Component not found!"
-        end
-
-        return "FnGetAtt('#{resource_name}','Outputs.#{param.name}')"
-      end
     end
 
   end

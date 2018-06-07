@@ -22,7 +22,7 @@ GEM
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.0)
     aws-sigv4 (1.0.2)
-    cfndsl (0.16.3)
+    cfndsl (0.16.6)
     diff-lcs (1.3)
     faraday (0.15.2)
       multipart-post (>= 1.2, < 3)
@@ -61,7 +61,7 @@ DEPENDENCIES
   aws-sdk-core (~> 3, < 4)
   aws-sdk-ec2 (~> 1, < 2)
   aws-sdk-s3 (~> 1, < 2)
-  cfndsl
+  cfndsl (~> 0.16)
   git (~> 1.4, < 2)
   highline (>= 1.7.10, < 1.8)
   netaddr (~> 1.5, >= 1.5.1)

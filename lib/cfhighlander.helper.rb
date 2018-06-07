@@ -11,7 +11,7 @@ module Cfhighlander
       end
 
       if value.class == Hash
-        return value.to_s
+        return value.to_json
       end
 
       return "'#{value}'"
