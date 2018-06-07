@@ -5,20 +5,23 @@
 Cfhighlander is DSL processor that enables composition and orchestration of Amazon CloudFormation templates 
 written using [CfnDsl](https://github.com/cfndsl/cfndsl) in an abstract way. It tries to tackle problem of merging multiple templates into master
 template in an elegant way, so higher degree of template reuse can be achieved. It does so by formalising commonly
-used patterns via DSL statements. For an example, passing output of one stack into other stack is achieved using 
-`OutputParam` highlander DSL statement, rather than wiring this parameters manually in cfndsl templates. For this example to 
+used cfndsl template composition patterns via DSL statements. For an example, passing output of one stack into other stack is done
+automatically if parameter and output names are the same, 
+rather than wiring them manually in 'master' cfndsl template. For this example to 
 work, parent component will have to pull in both component rendering output values, and component pulling them in
-as parameters. It also enables it's user to build component library, where components can be distributed to s3, and 
-consequentially references to them resolved. 
+as parameters. Cfhighlander allows for greater reuse of component templates by allowing references to templates
+via git urls, and s3 urls. [Theonestack](https://github.com/theonestack) has several prebuilt component templates to use,
+with repositories from this org being one of the default sources for searching component templates.
 
-Highlander DSL produces CloudFormation templates in 3 phases
+Highlander DSL produces CloudFormation templates in 4 phases
 
 - Processing referenced component's configuration and resolving configuration exports
+- Wiring parameters from components to their inner components
 - Producing [CfnDsl](https://github.com/cfndsl/cfndsl) templates for all components and subcomponents as intermediary
   step
 - Producing resulting CloudFormation templates using configuration and templates generated in two previous phases.
 
-Each phase above is executable as stand-alone through CLI, making development of Highlander templates easier by enabling
+Each phase (aside from parameter wiring) above is executable as stand-alone through CLI, making development of Highlander templates easier by enabling
 debugging of produced configuration and cfndsl templates. 
 
 
@@ -169,7 +172,7 @@ This configuration level overrides component's own config file.
 - Outer component explicit configuration. You can pass `config` named parameter to `Component` statement, such as
 
 ```ruby
-HighlanderComponent do
+CfhighlanderTemplate do
 
 # ...
 # some dsl code
@@ -257,7 +260,7 @@ Parameters block is used to define CloudFormation template parameters, and metad
 are wired with outer or sibling components. 
 
 ```ruby
-HighlanderComponent do
+CfhighlanderTemplate do
   Parameters do
     ##
     ##  parameter definitions here
@@ -270,81 +273,117 @@ Parameter block supports following parameters
 
 #### ComponentParam
 
-`ComponentParam` - Component parameter takes name and default value. It defines component parameter
-that is not auto-wired in any way with outer component. This parameter will either use default value, or value
-explicitly passed from outer component. 
+`ComponentParam` - Component parameter exposes parameter to be wired from outer component. Cfhighlander's
+autowiring mechanism will try and find any stack outputs from other components defined by outer components with name 
+matching. If there is no explicit value provided, or autowired from outputs, parameter will be propagated to outer component.
+
+Propagated parameter will be prefixed with component name **if it is not defined as global parameter**. Otherwise, 
+parameter name is kept in full. 
+
+Example below demonstrates 3 different ways of providing parameter values from outer to inner component. 
+
+- Provide value explicitly
+- Provide value explicitly as output of another component     
+- Autowire value from output of another component with the same name
+- Propagate parameter to outer component 
 
 ```ruby
 
-# Inner Component
-HighlanderComponent do
+# Inner Component 1
+CfhighlanderTemplate do
   Name 's3'
   Parameters do
      ComponentParam 'BucketName','highlander.example.com.au'
+     ComponentParam 'BucketName2',''
+     ComponentParam 'BucketName3',''
+     ComponentParam 'BucketName4','', isGlobal: false # default value is false
+     ComponentParam 'BucketName5','', isGlobal: true
   end
+
 end
+
+```
+
+```ruby
+# Inner Component 2
+CfhighlanderTemplate do
+  Name 'nameproducer'
+
+  # has output 'bucket name defined in cfdnsl
+end
+
+
+# -- contents of cfndsl 
+CloudFormation do
+
+    Condition 'AlwaysFalse', FnEquals('true','false')
+    S3_Bucket :resourcetovalidateproperly do
+      Condition 'AlwaysFalse'
+    end
+
+    Output('BucketName') do
+        Value('highlanderbucketautowired.example.com.au')
+    end
+end
+
+
 ```
 
 ```ruby
 # Outer component
-HighlanderComponent do
-  # instantiate inner component with name and template
-  Component template:'s3',
-            name:'s3', 
-            parameters:{'BucketName' => 'outer.example.com.au'}
+CfhighlanderTemplate do
+    Component 'nameproducer'
+    Component 's3' do
+      parameter name: 'BucketName2', value: 'nameproducer.BucketName'
+      parameter name: 'BucketName3', value: 'mybucket.example.cfhighlander.org'
+    end
 end
-```
 
-#### StackParam
-
-`StackParam` - Stack parameter bubbles up to it's outer component. Outer component will either define top level parameter
-with same name as inner component parameter (if parameter is defined as global), or it will be prefixed with inner component name.
-
-
-```ruby
-# Outer component
-HighlanderComponent do
-  Component template:'s3',name:'s3' 
-end
-```
-
-```ruby
-# Inner component
-HighlanderComponent do
-  Name 's3'
-  Parameters do
-    StackParam 'EnvironmentName','dev', isGlobal:true
-    StackParam 'BucketName','highlander.example.com.au', isGlobal:false
-  end
-end
 ```
 
 
-Example above translates to following cfndsl template in outer component
+Example above translates to following wiring of parameters in cfndsl template
 ```ruby
 CloudFormation do
 
-    Parameter('EnvironmentName') do
-    Type 'String'
-    Default ''
+     # Parameter that was propagated
+    Parameter('s3BucketName4') do
+      Type 'String'
+      Default ''
+      NoEcho false
+    end
+    
+    Parameter('BucketName5') do
+      Type 'String'
+      Default ''
+      NoEcho false
     end
 
-    Parameter('s3BucketName') do
-    Type 'String'
-    Default 'highlander.example.com.au'
-    end
-  
-    CloudFormation_Stack('s3') do
-      TemplateURL 'https://distributionbucket/dist/latest/s3.yaml'
-      Parameters ({
-      
-        'EnvironmentName' => Ref('EnvironmentName'),
-      
-        'BucketName' => Ref('s3BucketName'),
-      
-      })
-    end
+   CloudFormation_Stack('s3') do
+       TemplateURL './s3.compiled.yaml'
+       Parameters ({
+       
+          # Paramater that was auto-wired
+           'BucketName' => {"Fn::GetAtt":["nameproducer","Outputs.BucketName"]},
+       
+          # Parameter that was explicitly wired as output param from another component
+           'BucketName2' => {"Fn::GetAtt":["nameproducer","Outputs.BucketName"]},
+       
+          # Paramater that was explicitly provided
+           'BucketName3' => 'mybucket.example.cfhighlander.org',
+       
+          # Reference to parameter that was propagated. isGlobal: false when defining
+          # parameter, so parameter name is prefixed with component name 
+           'BucketName4' => {"Ref":"s3BucketName4"},
+          
+          # Reference to parameter that was propagated. isGlobal: true when defining
+          # parameter, so parameter name is not prefixed, but rather propagated as-is
+          'BucketName5' => {"Ref":"BucketName5"},
+       
+       })
+   end
 end
+
 ```
 
 
@@ -358,7 +397,7 @@ This DSL statements takes a full body, as Mapping name, Map key, and value key n
  
  ```ruby
 # Inner component
-HighlanderComponent do
+CfhighlanderTemplate do
   Name 's3'
   Parameters do
     MappingParam 'BucketName' do
@@ -370,17 +409,13 @@ end
  ```
 
 
-#### OutputParam
-
-TBD
-
 ### DependsOn
 
 `DependsOn` - this will include any globally exported libraries from given 
 template. E.g.
 
  ```ruby
-HighlanderComponent do
+CfhighlanderTemplate do
   Name 's3'
   DependsOn 'vpc@1.0.3'
 end
@@ -398,7 +433,46 @@ so extension methods can be consumed within cfndsl template.
 #### Referencing
 
 
-## Finding and loading components
+## Finding templates and creating components
+
+
+Templates are located by default in following locations
+
+- `$WD`
+- `$WD/$componentname`
+- `$WD/components/$componentname`
+- `~/.cfhighlander/components/componentname/componentversion`
+- `https://github.com/cfhighlander/theonestack/hl-component-$componentname` on `master` branch
+
+Location of component templates can be given as git/github repo:
+
+```ruby
+
+CfhighlanderTemplate do
+
+      # pulls directly from master branch of https://github.com/theonestack/hl-component-vpc
+      Component name: 'vpc0', template: 'vpc'
+    
+      # specify branch github.com: or github: work. You specify branch with hash
+      Component name: 'vpc1', template: 'github:theonestack/hl-component-vpc#master'
+    
+      # you can use git over ssh
+      # Component name: 'vpc2', template: 'git:git@github.com:theonestack/hl-component-vpc.git'
+    
+      # use git over https
+      Component name: 'vpc3', template: 'git:https://github.com/theonestack/hl-component-sns.git'
+    
+      # specify .snapshot to always clone fresh copy
+      Component name: 'vpc4', template: 'git:https://github.com/theonestack/hl-component-sns.git#master.snapshot'
+    
+      # by default, if not found locally, highlander will search for https://github.com/theonestack/component-$componentname
+      # in v${version} branch (or tag for that matter)
+      Component name: 'vpc5', template: 'vpc@1.0.4'
+
+end
+
+```
+
 
 ## Rendering CloudFormation templates
 

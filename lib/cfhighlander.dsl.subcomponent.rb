@@ -169,6 +169,8 @@ module Cfhighlander
                     "Outputs.#{source_output}"
                 ]).to_json
               end
+            else
+              return Cfhighlander::Helper.parameter_cfndsl_value(param_value)
             end
           else
             return Cfhighlander::Helper.parameter_cfndsl_value(sub_component.param_values[param.name])
