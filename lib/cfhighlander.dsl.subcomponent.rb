@@ -18,19 +18,23 @@ module Cfhighlander
 
     class Subcomponent < DslBase
 
-      attr_accessor :name,
-          :template,
-          :template_version,
-          :distribution_format,
+      attr_accessor :distribution_format,
           :distribution_location,
           :distribution_url,
           :distribution_format,
           :component_loaded,
           :parameters,
           :param_values,
-          :parent,
           :component_config_override,
           :export_config
+
+
+      attr_reader :cfn_name,
+          :conditional,
+          :parent,
+          :name,
+          :template,
+          :template_version
 
       def initialize(parent,
           name,
@@ -39,12 +43,15 @@ module Cfhighlander
           component_sources = [],
           config = {},
           export_config = {},
+          conditional = false,
+          enabled = true,
           distribution_format = 'yaml')
 
         @parent = parent
         @config = config
         @export_config = export_config
         @component_sources = component_sources
+        @conditional = conditional
 
         template_name = template
         template_version = 'latest'
@@ -56,6 +63,7 @@ module Cfhighlander
         @template = template_name
         @template_version = template_version
         @name = name
+        @cfn_name = @name.gsub('-','').gsub('_','').gsub(' ','')
         @param_values = param_values
 
         # distribution settings
@@ -74,7 +82,18 @@ module Cfhighlander
         @component_loaded.config.extend @config
 
         @parameters = []
-        # load_parameters
+
+        # add condition to parent if conditonal component
+        if @conditional
+          condition_param_name = "Enable#{@cfn_name}"
+          @parent.Condition(condition_param_name, CfnDsl::Fn.new('Equals', [
+              CfnDsl::RefDefinition.new(condition_param_name),
+              'true'
+          ]).to_json)
+          @parent.Parameters do
+            ComponentParam condition_param_name, enabled.to_s, allowedValues: %w(true false)
+          end
+        end
       end
 
       def version=(value)
@@ -197,7 +216,7 @@ module Cfhighlander
 
         # by default bubble parameter and resolve as reference on upper level
         propagated_param = param.clone
-        propagated_param.name = "#{sub_component.name}#{param.name}" unless param.is_global
+        propagated_param.name = "#{sub_component.cfn_name}#{param.name}" unless param.is_global
         component.parameters.addParam propagated_param
         puts " no autowiring candidates, propagate parameter to parent"
         return CfnDsl::RefDefinition.new(propagated_param.name).to_json

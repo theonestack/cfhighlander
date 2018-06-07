@@ -477,6 +477,9 @@ end
 ## Rendering CloudFormation templates
 
 
+```bash
+$ cfhighlander cfcompile [component] [-v distributedversion]
+```
 
 ## Global Extensions
 
