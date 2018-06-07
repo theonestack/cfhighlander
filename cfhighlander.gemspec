@@ -3,7 +3,7 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'cfhighlander'
-  s.version = '0.2.1'
+  s.version = '0.3.0'
   s.version = "#{s.version}.alpha.#{ENV['TRAVIS_BUILD_NUMBER']}" if ENV['TRAVIS'] and ENV['TRAVIS_BRANCH'] != 'master'
   s.date = Date.today.to_s
   s.summary = 'DSL on top of cfndsl. Manage libraries of cloudformation components'
