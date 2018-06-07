@@ -15,13 +15,20 @@ require_relative './cfhighlander.dsl.subcomponent'
 module Cfhighlander
 
   module Dsl
+    class Condition < DslBase
 
+      attr_reader :name, :expression
+
+      def initialize(name, expression)
+        @name = name
+        @expression = expression
+      end
+    end
     class HighlanderTemplate < DslBase
 
       attr_accessor :mappings,
           :parameters,
           :name,
-          :subcomponents,
           :version,
           :distribute_url,
           :distribution_bucket,
@@ -29,6 +36,8 @@ module Cfhighlander
           :lambda_functions_keys,
           :description,
           :dependson_components
+
+      attr_reader :conditions, :subcomponents
 
       def initialize
         @mappings = []
@@ -43,6 +52,7 @@ module Cfhighlander
         @lambda_functions_keys = []
         @dependson_components_templates = []
         @dependson_components = []
+        @conditions = []
       end
 
       # DSL statements
@@ -72,6 +82,10 @@ module Cfhighlander
         @parameters.instance_eval(&block)
       end
 
+      def Condition(name, expression)
+        @conditions << Condition.new(name, expression)
+      end
+
       def DynamicMappings(providerName)
         maps = mappings_provider_maps(providerName, self.config)
         maps.each {|name, map| addMapping(name, map)} unless maps.nil?
@@ -86,7 +100,10 @@ module Cfhighlander
           name: template,
           param_values: {},
           config: {},
-          export_config: {}, &block)
+          export_config: {},
+          conditional: false,
+          enabled: true,
+          &block)
         puts "INFO: Requested subcomponent #{name} with template #{template}"
         if ((not template_arg.nil?) and template.nil?)
           template = template_arg
@@ -104,7 +121,9 @@ module Cfhighlander
             param_values,
             @component_sources,
             config,
-            export_config
+            export_config,
+            conditional,
+            enabled
         )
         component.instance_eval(&block) unless block.nil?
         component.distribute_bucket = @distribution_bucket unless @distribution_bucket.nil?
