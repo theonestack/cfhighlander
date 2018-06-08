@@ -71,7 +71,18 @@ class HighlanderCli < Thor
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
-  def cfcompile(component_name)
+  def cfcompile(component_name = nil)
+
+    if component_name.nil?
+      candidates = Dir["*.cfhighlander.rb"]
+      if candidates.size == 0
+        self.help('cfcompile')
+        exit -1
+      else
+        component_name = candidates[0].gsub('.cfhighlander.rb','')
+      end
+    end
+
     component = build_component(options, component_name)
 
     # compile cloud formation

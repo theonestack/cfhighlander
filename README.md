@@ -44,7 +44,7 @@ this file defines map used within component itself
 **Component** is basic building block of highlander systems. Components have following roles
 
 - Define (include) other components
-- Define how their parameters are wired with other components (sibling and outer components)
+- Provide values for their inner component parameters
 - Define how their configuration affects other components
 - Define sources of their inner components
 - Define publish location for both component source code and compiled CloudFormation templates
@@ -92,7 +92,7 @@ Options:
   -v, [--version=VERSION]      # Distribution component version, defaults to latest
 
 Publish CloudFormation template for component,
-            and it' referenced subcomponents
+            and it's referenced subcomponents
 
 ```
 
@@ -145,7 +145,6 @@ cfndsl templates. Check component configuration section for more details.
 
 *publish* command publishes cfhighlander components source code to s3 location (compared to *cfpublish* which is publishing
 compiled cloudformation templates). Same CLI / DSL options apply as for *cfpublish* command. Version defaults to `latest`
-
 
 
 ## Component configuration
@@ -252,6 +251,47 @@ such functions in separate files. Any ruby files placed within `ext/cfndsl` dire
 included via Ruby `require` function in compiled Cfndsl template. 
 
 ## Component DSL
+
+### Inner components or subcomponents
+
+Inner components or subcomponents are defined via `Component` DSL statement
+
+```ruby
+CfhighlanderTemplate do
+  
+  # Example1 : Include component by template name only
+  Component 'vpc' 
+  
+  # Example2 : Include component by template name, version and give it a name
+  Component template: 'ecs@master.snapshot'
+  
+end
+
+```
+
+**Conditional components** - If you want to add top level paramater as feature toggle for one of the inner
+components, just mark it as conditional, using `conditional:` named parameter. In addition to this, default
+value for feature toggle can be supplied using `enabled:` named parameter
+
+
+```ruby
+
+# Include vpc and 2 ecs clusters with feature flags
+CfhighlanderTemplate do
+  
+  # vpc component
+  Component 'vpc' 
+  
+  # Ecs Cluster 1 has feature toggle, enabled by default
+  Component name: 'ecs1', template: 'ecs', conditional: true
+  
+  # Ecs Cluster 2 has feature toggle, and is explicitly disabled by default
+  Component name: 'ec2', template: 'ecs', conditional: true, enabled: false
+   
+end
+
+```
+
 
 
 ### Parameters
