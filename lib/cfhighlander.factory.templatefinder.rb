@@ -60,7 +60,7 @@ module Cfhighlander
 
           if not Dir.glob("#{cache_path}*.cfhighlander.rb").empty?
             # if cache exists, just return from cache
-            component_name = Dir.glob("#{cache_path}*.cfhighlander.rb")[0].gsub(cache_path, '').gsub('.highlander.rb', '')
+            component_name = Dir.glob("#{cache_path}*.cfhighlander.rb")[0].gsub(cache_path, '').gsub('.cfhighlander.rb', '')
             return component_name, cache_path
           end
 
