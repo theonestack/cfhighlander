@@ -49,6 +49,9 @@ RSpec.describe HighlanderCli, "#run" do
   end
 
   context "test theonestack default components" do
+    Octokit.configure do |c|
+      c.access_token = ENV['GITHUB_PERSONAL_ACCESS_TOKEN'] if ENV.key? 'GITHUB_PERSONAL_ACCESS_TOKEN'
+    end
     client = Octokit::Client.new
     cwd = Dir.pwd
     client.get('orgs/theonestack/repos').each do |repo|
