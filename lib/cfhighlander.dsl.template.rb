@@ -433,7 +433,7 @@ end
 def CfhighlanderTemplate(&block)
   instance = Cfhighlander::Dsl::HighlanderTemplate.new
 
-  puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+  puts "Processing cfhighlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
       "\n\tConfig:#{@config}"
 
 
