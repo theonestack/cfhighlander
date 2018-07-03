@@ -458,7 +458,6 @@ def CfhighlanderTemplate(&block)
   instance.name = @template.template_name
   instance.instance_eval(&block)
 
-
   # load sub-components
   instance.loadComponents
 

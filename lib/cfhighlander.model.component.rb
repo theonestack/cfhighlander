@@ -107,7 +107,15 @@ module Cfhighlander
 
         # 1st pass - parse the file
         @component_files << @highlander_dsl_path
-        @highlander_dsl = eval(File.read(@highlander_dsl_path), binding)
+
+        cfhl_script = ''
+        @config.each do |key, val|
+          cfhl_script += ("\n#{key} = #{val.inspect}\n")
+        end
+        cfhl_script += File.read(@highlander_dsl_path)
+
+        @highlander_dsl = eval(cfhl_script, binding)
+
         # set version if not defined
         @highlander_dsl.ComponentVersion(@version) unless @version.nil?
 

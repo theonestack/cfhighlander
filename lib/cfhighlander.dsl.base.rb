@@ -14,7 +14,7 @@ module Cfhighlander
         if @config.nil?
           raise StandardError, "#{self} no config!"
         end
-        return @config["#{method}"] unless @config["#{method}"].nil?
+        # return @config["#{method}"] unless @config["#{method}"].nil?
         raise StandardError, "#{self} Unknown method or variable #{method} in Cfhighlander template"
       end
 
