@@ -22,7 +22,9 @@ module Cfhighlander
           :cfndsl_ext_files,
           :lambda_src_files
 
-      attr_reader :cfn_model, :outputs
+      attr_reader :cfn_model,
+          :outputs,
+          :potential_subcomponent_overrides
 
       def initialize(template_meta, component_name)
         @template = template_meta
@@ -35,6 +37,7 @@ module Cfhighlander
         @component_files = []
         @cfndsl_ext_files = []
         @lambda_src_files = []
+        @potential_subcomponent_overrides = {}
       end
 
       # load component configuration files
@@ -43,10 +46,13 @@ module Cfhighlander
         Dir["#{@component_dir}/*.config.yaml"].each do |config_file|
           puts "INFO Loading config for #{@name}: read file:#{config_file} "
           partial_config = YAML.load(File.read(config_file))
-          unless partial_config.nil?
+          unless (partial_config.nil? or partial_config.key? 'subcomponent_config_file')
             @config.extend(partial_config)
             @component_files << config_file
           end
+          fname = File.basename(config_file)
+          potential_component_name = fname.gsub('.config.yaml','')
+          @potential_subcomponent_overrides[potential_component_name] = partial_config
         end
       end
 
@@ -156,6 +162,9 @@ module Cfhighlander
       # evaluates cfndsl with current config
       def eval_cfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
+        # there is no need for processing lambda source code during cloudformation evaluation,
+        # this version never gets published
+        compiler.process_lambdas = false
         @cfn_model = compiler.evaluateCloudFormation().as_json
         @outputs = (
         if @cfn_model.key? 'Outputs'

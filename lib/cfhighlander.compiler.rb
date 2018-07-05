@@ -29,7 +29,8 @@ module Cfhighlander
           :cfn_output_location,
           :cfn_template_paths,
           :silent_mode,
-          :lambda_src_paths
+          :lambda_src_paths,
+          :process_lambdas
 
       def initialize(component)
 
@@ -45,6 +46,7 @@ module Cfhighlander
         @lambda_src_paths = []
         @config_yaml_path = nil
         @cfn_model = nil
+        @process_lambdas = true
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
@@ -56,6 +58,11 @@ module Cfhighlander
           sub_component_compiler.component_name = sub_component.name
           @sub_components << sub_component_compiler
         end
+      end
+
+      def process_lambdas=(value)
+        @process_lambdas = value
+        @sub_components.each { |scc| scc.process_lambdas=value }
       end
 
       def silent_mode=(value)
@@ -177,14 +184,13 @@ module Cfhighlander
       end
 
       def processLambdas()
-
         @component.highlander_dsl.lambda_functions_keys.each do |lfk|
           resolver = LambdaResolver.new(@component,
               lfk,
               @workdir,
               (not @silent_mode)
           )
-          @lambda_src_paths += resolver.generateSourceArchives
+          @lambda_src_paths += resolver.generateSourceArchives if @process_lambdas
           resolver.mergeComponentConfig
         end
 
