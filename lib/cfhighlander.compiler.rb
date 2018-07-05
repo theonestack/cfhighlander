@@ -233,6 +233,7 @@ module Cfhighlander
 
           # download file if code remote archive
           puts "Packaging AWS Lambda function #{name}...\n"
+          puts "Destination archive is #{full_destination_path}"
           if lambda_config['code'].include? 'http'
             md5 = Digest::MD5.new
             md5.update lambda_config['code']
@@ -243,7 +244,7 @@ module Cfhighlander
               FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
             elsif File.file? cached_location
               puts "Using cached download - '#{cached_location}'"
-              FileUtils.copy(cached_location, "#{out_folder}/src.zip")
+              FileUtils.copy(cached_location, full_destination_path)
             else
               puts "Downloading file #{lambda_config['code']} ..."
               download = open(lambda_config['code'])
