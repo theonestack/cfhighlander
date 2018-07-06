@@ -166,6 +166,21 @@ components:
 
 ```
 This configuration level overrides component's own config file.
+Alternatively, to keep things less nested in configuration hierarchy, creating config file `vpc.config.yaml`
+for component named `vpc` works just as well:
+
+```yaml
+
+# contents of vpc.config.yaml in outer component, defining vpc component
+
+# line below prevents component configuration file being merged with outer component configuration
+subcomponent_config_file:  
+
+# there is no need for components/vpc/config structure, it is implied by file name
+maximum_availibility_zones: 3
+
+
+```
 
 
 - Outer component explicit configuration. You can pass `config` named parameter to `Component` statement, such as
