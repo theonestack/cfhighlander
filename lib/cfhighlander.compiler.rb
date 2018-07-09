@@ -257,6 +257,7 @@ module Cfhighlander
               IO.copy_stream(download, "#{out_folder}/src.zip")
               FileUtils.mkdir_p('.cache/lambdas')
               FileUtils.copy("#{out_folder}/src.zip", cached_location)
+              FileUtils.copy("#{out_folder}/src.zip", full_destination_path)
               puts "Download complete, caching in #{cached_location}"
               cached_downloads[lambda_config['code']] = cached_location
             end
