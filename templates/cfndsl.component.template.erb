@@ -42,5 +42,7 @@ CloudFormation do
 
 <% for @condition in dsl.conditions %>    Condition('<%= @condition.name %>', <%= @condition.expression %>)
 <% end %>
+<% for @output in dsl .outputs %>    Output('<%= @output.name %>', <%= @output.value.inspect %>)
+<% end %>
     Description '<%= dsl.description %>'
 end

@@ -1,8 +1,19 @@
-
 module Cfhighlander
 
   module Dsl
     class DslBase
+
+      def FnGetAtt(resource, property)
+        return {
+            'Fn::GetAtt' => [resource, property]
+        }
+      end
+
+      def Ref(resource)
+        return {
+            'Ref' => resource
+        }
+      end
 
       attr_accessor :config
 

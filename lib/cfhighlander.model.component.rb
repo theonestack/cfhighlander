@@ -38,6 +38,7 @@ module Cfhighlander
         @cfndsl_ext_files = []
         @lambda_src_files = []
         @potential_subcomponent_overrides = {}
+        @outputs = []
       end
 
       # load component configuration files
@@ -156,17 +157,17 @@ module Cfhighlander
           @cfndsl_content = ''
         end
 
-        loadDepandantExt()
+        loadDepandantExt
       end
 
       # evaluates cfndsl with current config
-      def eval_cfndsl
+      def evalCfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
         # there is no need for processing lambda source code during cloudformation evaluation,
         # this version never gets published
         compiler.process_lambdas = false
         @cfn_model = compiler.evaluateCloudFormation().as_json
-        @outputs = (
+        @outputs += (
         if @cfn_model.key? 'Outputs'
         then
           @cfn_model['Outputs'].map {|k, v| ComponentOutput.new self, k, v}
