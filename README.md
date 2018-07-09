@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.com/theonestack/cfhighlander)
+[![Build Status](https://travis-ci.org/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.org/theonestack/cfhighlander)
 
 # Cfhighlander
 
