@@ -40,6 +40,20 @@ module Cfhighlander
         @potential_subcomponent_overrides = {}
       end
 
+      def distribution_bucket=(value)
+        if not @highlander_dsl.nil?
+          @highlander_dsl.DistributionBucket(value)
+        end
+        @distribution_bucket = value
+      end
+
+      def distribution_prefix=(value)
+        if not @highlander_dsl.nil?
+          @highlander_dsl.DistributionPrefix(value)
+        end
+        @distribution_prefix = value
+      end
+
       # load component configuration files
       def load_config()
         @config = {} if @config.nil?
