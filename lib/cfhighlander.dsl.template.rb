@@ -452,15 +452,16 @@ def CfhighlanderTemplate(&block)
     instance.config['component_version'] = @version
   end
 
+
+  instance.name = @template.template_name
+  instance.instance_eval(&block)
+
   unless @distribution_bucket.nil?
     instance.DistributionBucket(@distribution_bucket)
   end
   unless @distribution_prefix.nil?
     instance.DistributionPrefix(@distribution_prefix)
   end
-
-  instance.name = @template.template_name
-  instance.instance_eval(&block)
 
   # process convention over configuration componentname.config.yaml files
   @potential_subcomponent_overrides.each do |name, config|
