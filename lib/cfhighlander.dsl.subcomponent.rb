@@ -152,7 +152,7 @@ module Cfhighlander
     class SubcomponentParamValueResolver
       def self.resolveValue(component, sub_component, param, available_outputs)
 
-        print("INFO Resolving parameter #{component.name} -> #{sub_component.name}.#{param.name}: ")
+        puts("INFO Resolving parameter #{component.name} -> #{sub_component.name}.#{param.name}: ")
 
         # rule 0: this rule is here for legacy reasons and OutputParam. It should be deprecated
         # once all hl-components- repos remove any references to OutputParam

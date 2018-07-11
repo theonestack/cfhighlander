@@ -34,7 +34,10 @@ module Cfhighlander
 
 
       def buildComponentFromLocation(template_meta, component_name)
-        component = Model::Component.new(template_meta, component_name)
+        component = Model::Component.new(template_meta,
+            component_name,
+            self)
+        component.factory = self
         component.load_config
         return component
       end

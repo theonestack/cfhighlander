@@ -39,7 +39,8 @@ module Cfhighlander
 
       attr_reader :conditions,
           :subcomponents,
-          :config_overrides
+          :config_overrides,
+          :extended_template
 
       def initialize
         @mappings = []
@@ -55,7 +56,8 @@ module Cfhighlander
         @dependson_components_templates = []
         @dependson_components = []
         @conditions = []
-        @config_overrides = {}
+        @config_overrides = {},
+        @extended_template = nil
       end
 
       # DSL statements
@@ -98,6 +100,9 @@ module Cfhighlander
         @dependson_components_templates << template
       end
 
+      def Extends(template)
+        @extended_template = template
+      end
 
       def Component(template_arg = nil, template: nil,
           name: template,
@@ -435,11 +440,16 @@ module Cfhighlander
 end
 
 def CfhighlanderTemplate(&block)
-  instance = Cfhighlander::Dsl::HighlanderTemplate.new
 
-  puts "Processing cfhighlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
-      "\n\tConfig:#{@config}"
-
+  if @parent_dsl.nil?
+    instance = Cfhighlander::Dsl::HighlanderTemplate.new
+    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+        "\n\tConfig:#{@config}"
+  else
+    instance = @parent_dsl
+    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+        "\n\tConfig:#{@config}\n\tParent: #{@parent_template}"
+  end
 
   instance.config = @config
 
