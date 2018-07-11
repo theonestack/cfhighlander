@@ -475,10 +475,22 @@ def CfhighlanderTemplate(&block)
 
   # process convention over configuration componentname.config.yaml files
   @potential_subcomponent_overrides.each do |name, config|
+
+    # if there is component with given file name
     if (not instance.subcomponents.find{|s|s.name == name}.nil?)
       instance.config['components'] = {} unless instance.config.key? 'components'
       instance.config['components'][name] = {} unless instance.config['components'].key? name
       instance.config['components'][name]['config'] = {} unless instance.config['components'][name].key? 'config'
+
+      # prevention of infinite recursion when applied to legacy configurations
+      if config.key? 'components'
+        if config['components'].key? name
+          if config['components'][name].key? 'config'
+           config = config['components'][name]['config']
+          end
+        end
+      end
+
       instance.config['components'][name]['config'].extend config
     end
   end
