@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+
+ARGV.unshift('cfpublish')
+require_relative('./cfhighlander')

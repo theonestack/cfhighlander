@@ -14,6 +14,8 @@ Gem::Specification.new do |s|
   s.homepage = 'https://github.com/theonestack/cfhighlander/blob/master/README.md'
   s.license = 'MIT'
   s.executables << 'cfhighlander'
+  s.executables << 'cfcompile'
+  s.executables << 'cfpublish'
 
   s.add_runtime_dependency 'highline', '>=1.7.10','<1.8'
   s.add_runtime_dependency 'thor', '~>0.20', '<1'
