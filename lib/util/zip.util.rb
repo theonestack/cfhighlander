@@ -17,7 +17,7 @@ module Cfhighlander
       # Zip the input directory.
       def write
         entries = Dir.entries(@input_dir) - %w(. ..)
-
+        puts "DEBUG: Compressing #{@input_dir} to #{@output_file}"
         ::Zip::File.open(@output_file, ::Zip::File::CREATE) do |zipfile|
           write_entries entries, '', zipfile
         end
@@ -30,7 +30,6 @@ module Cfhighlander
         entries.each do |e|
           zipfile_path = path == '' ? e : File.join(path, e)
           disk_file_path = File.join(@input_dir, zipfile_path)
-          puts "TRACE: Deflating #{disk_file_path}"
 
           if File.directory? disk_file_path
             recursively_deflate_directory(disk_file_path, zipfile, zipfile_path)

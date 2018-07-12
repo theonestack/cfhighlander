@@ -63,7 +63,7 @@ module Cfhighlander
         @template = template_name
         @template_version = template_version
         @name = name
-        @cfn_name = @name.gsub('-','').gsub('_','').gsub(' ','')
+        @cfn_name = @name.gsub('-', '').gsub('_', '').gsub(' ', '')
         @param_values = param_values
 
         # distribution settings
@@ -129,6 +129,26 @@ module Cfhighlander
 
       def parameter(name:, value:)
         @param_values[name] = value
+      end
+
+      def config(key = '', value = '')
+        @component_loaded.config[key] = value
+      end
+
+      def ConfigParameter(config_key:, parameter:, defaultValue: '', type: 'String')
+        Parameters do
+          ComponentParam parameter, defaultValue, type: type
+        end
+        config config_key, Ref(parameter)
+      end
+
+      ## for all the message received, try and forward them to load component dsl
+      def method_missing(method, *args, &block)
+        child_dsl = @component_loaded.highlander_dsl
+        if child_dsl.respond_to? method
+          # child_dsl.method
+          child_dsl.send method, *args, &block
+        end
       end
 
       # Parameters should be lazy loaded, that is late-binding should happen once
