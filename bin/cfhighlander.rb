@@ -16,9 +16,7 @@ require_relative '../lib/cfhighlander.validator'
 
 class HighlanderCli < Thor
 
-
-
-  package_name "highlander"
+  package_name "cfhighlander"
 
   desc 'configcompile component[@version]', 'Compile Highlander components configuration'
 
