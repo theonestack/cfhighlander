@@ -276,6 +276,7 @@ module Cfhighlander
             # executing package command can generate files. We DO NOT want this file in source directory,
             # but rather in intermediate directory
             tmp_source_dir = "#{@workdir}/out/lambdas/tmp/#{name}"
+            FileUtils.rmtree(File.dirname(tmp_source_dir)) if File.exist? tmp_source_dir
             FileUtils.mkpath(File.dirname(tmp_source_dir))
             FileUtils.copy_entry(lambda_source_dir, tmp_source_dir)
             lambda_source_dir = tmp_source_dir
