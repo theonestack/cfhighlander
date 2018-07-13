@@ -5,7 +5,7 @@ script:
   - gem build cfhighlander.gemspec
   - gem install cfhighlander-*.gem
   - which cfhighlander && cfhighlander help
-  - bundle exec rspec
+  - cfndsl -u && bundle exec rspec
 deploy:
   provider: rubygems
   api_key: "${RUBYGEMS_API_KEY}"

@@ -1,11 +1,11 @@
-require_relative './highlander.compiler'
+require_relative './cfhighlander.compiler'
 require 'aws-sdk-s3'
 
-module Highlander
+module Cfhighlander
 
   module Publisher
 
-    class Component
+    class ComponentPublisher
 
       def initialize(component, cleanup)
         @component = component

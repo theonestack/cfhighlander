@@ -1,4 +1,4 @@
-module Highlander
+module Cfhighlander
 
 
   module Helper
@@ -11,7 +11,7 @@ module Highlander
       end
 
       if value.class == Hash
-        return value.to_s
+        return value.to_json
       end
 
       return "'#{value}'"

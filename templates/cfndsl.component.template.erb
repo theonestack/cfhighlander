@@ -8,21 +8,21 @@ CloudFormation do
 <% end %>
 
 # render subcomponents
-<% for @component in dsl.components %>
-    CloudFormation_Stack('<%= @component.name.gsub('-','').gsub('_','') %>') do
-    TemplateURL '<%= @component.distribution_url %>'
-    Parameters ({
-    <% for @param in @component.parameters %>
-        '<%= @param.name %>' => <%= @param.cfndsl_value %>,
-    <% end %>
-    })
+<% for @subcomponent in dsl.subcomponents %>
+    CloudFormation_Stack('<%= @subcomponent.cfn_name %>') do
+        TemplateURL '<%= @subcomponent.distribution_url %>'
+        Parameters ({
+        <% for @param in @subcomponent.parameters %><%="\t"%>'<%=@param.name %>' => <%= @param.cfndsl_value %>,
+        <% end %>})
+        <% if @subcomponent.conditional %>Condition 'Enable<%= @subcomponent.cfn_name %>' <% end %>
     end
 <% end %>
 
 <%= component_cfndsl %>
 
-# render lambda functions
+
 <% unless dsl.lambda_functions_keys.nil? %>
+    # cfhighlander generated lambda functions
     <% for @key in dsl.lambda_functions_keys %>
         render_lambda_functions(self,
         <%= @key %>,
@@ -30,16 +30,17 @@ CloudFormation do
         {'bucket'=>'<%= dsl.distribution_bucket %>','prefix' => '<%= dsl.distribution_prefix %>', 'version'=>'<%= dsl.version %>'})
     <% end %>
 <% end %>
-# render parameters at the end, overriding any parameters defined in template itself
+    # cfhighlander generated parameters
 <% for @param in dsl.parameters.param_list %>
     Parameter('<%= @param.name %>') do
       Type '<%= @param.type %>'
       Default '<%= @param.default_value %>'
-      <% unless @param.no_echo.nil? %>
-      NoEcho <%= @param.no_echo.to_s %>
-      <% end %>
+      <% unless @param.no_echo.nil? %>NoEcho <%= @param.no_echo.to_s %> <% end %>
+      <% unless @param.allowed_values.nil? %>AllowedValues <%= @param.allowed_values.to_s %> <% end %>
     end
 <% end %>
 
-  Description '<%= dsl.description %>'
+<% for @condition in dsl.conditions %>    Condition('<%= @condition.name %>', <%= @condition.expression %>)
+<% end %>
+    Description '<%= dsl.description %>'
 end

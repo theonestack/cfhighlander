@@ -2,26 +2,33 @@
 
 extensions_folder = "#{File.dirname(__FILE__)}/../hl_ext"
 
-Dir["#{extensions_folder}/*.rb"].each { |f|
+Dir["#{extensions_folder}/*.rb"].each {|f|
   require f
 }
 
 # require libraries
 
-require_relative './highlander.dsl.base'
-require_relative './highlander.dsl.params'
-require_relative './highlander.dsl.component'
+require_relative './cfhighlander.dsl.base'
+require_relative './cfhighlander.dsl.params'
+require_relative './cfhighlander.dsl.subcomponent'
 
-module Highlander
+module Cfhighlander
 
   module Dsl
+    class Condition < DslBase
 
-    class Template < DslBase
+      attr_reader :name, :expression
+
+      def initialize(name, expression)
+        @name = name
+        @expression = expression
+      end
+    end
+    class HighlanderTemplate < DslBase
 
       attr_accessor :mappings,
           :parameters,
           :name,
-          :components,
           :version,
           :distribute_url,
           :distribution_bucket,
@@ -30,9 +37,14 @@ module Highlander
           :description,
           :dependson_components
 
+      attr_reader :conditions,
+          :subcomponents,
+          :config_overrides,
+          :extended_template
+
       def initialize
         @mappings = []
-        @components = []
+        @subcomponents = []
         @config = { 'mappings' => {}, 'component_version' => 'latest' }
         @component_configs = {}
         @version = 'latest'
@@ -43,6 +55,11 @@ module Highlander
         @lambda_functions_keys = []
         @dependson_components_templates = []
         @dependson_components = []
+        @conditions = []
+        @config_overrides = {}
+        @extended_template = nil
+        # execution blocks for subcomponents
+        @subcomponents_exec = {}
       end
 
       # DSL statements
@@ -54,8 +71,12 @@ module Highlander
       end
 
       def Name(name)
-        @name = name
-        @config['component_name'] = name
+        # nested components always have their name dictated by parent
+        # component, defaulting to template name
+        if (not @config.key? 'nested_component')
+          @name = name
+          @config['component_name'] = name
+        end
       end
 
       def Description(description)
@@ -65,36 +86,66 @@ module Highlander
 
       def Parameters(&block)
         @parameters.config = @config
-        @parameters.instance_eval(&block)
+        @parameters.instance_eval(&block) unless block.nil?
+      end
+
+      # def ComponentParam(argc*, argv)
+      #   @parameters.ComponentParam(argc, argv)
+      # end
+
+      def Condition(name, expression)
+        @conditions << Condition.new(name, expression)
       end
 
       def DynamicMappings(providerName)
         maps = mappings_provider_maps(providerName, self.config)
-        maps.each { |name, map| addMapping(name, map) } unless maps.nil?
+        maps.each {|name, map| addMapping(name, map)} unless maps.nil?
       end
 
       def DependsOn(template)
         @dependson_components_templates << template
       end
 
+      def Extends(template)
+        @extended_template = template
+      end
 
-      def Component(name:, template:, param_values: {}, config: {}, export_config: {}, &block)
-        puts "Initialize #{name} with template #{template}"
+      def Component(template_arg = nil, template: nil,
+          name: template,
+          param_values: {},
+          config: {},
+          export_config: {},
+          conditional: false,
+          enabled: true,
+          &block)
+        puts "INFO: Requested subcomponent #{name} with template #{template}"
+        if ((not template_arg.nil?) and template.nil?)
+          template = template_arg
+        elsif (template_arg.nil? and template.nil?)
+          raise 'Component must be defined with template name at minimum,' +
+              ' passed as first argument, or template: named arguent'
+        end
+
+        name = template if name.nil?
 
         # load component
-        component = Highlander::Dsl::Component.new(self,
+        component = Cfhighlander::Dsl::Subcomponent.new(self,
             name,
             template,
             param_values,
             @component_sources,
             config,
-            export_config
+            export_config,
+            conditional,
+            enabled
         )
+        # component.instance_eval(&block) unless block.nil?
+        @subcomponents_exec[name] = block unless block.nil?
         component.distribute_bucket = @distribution_bucket unless @distribution_bucket.nil?
         component.distribute_prefix = @distribution_prefix unless @distribution_prefix.nil?
         component.version = @version unless @version.nil?
         @component_configs[name] = config
-        @components << component
+        @subcomponents << component
       end
 
       def ComponentVersion(version)
@@ -144,11 +195,11 @@ module Highlander
 
       # Internal and interface functions
 
-      def loadComponents()
+      def loadComponents
 
         # empty config overrides to start with
-        @config_overrides = Hash[@components.collect { |c| [c.name, {}] }]
-        @named_components = Hash[@components.collect { |c| [c.name, c] }]
+        @config_overrides = Hash[@subcomponents.collect {|c| [c.name, { 'nested_component' => true }]}]
+        @named_components = Hash[@subcomponents.collect {|c| [c.name, c]}]
 
         # populate overrides with master config defined overrides
         load_configfile_component_config
@@ -170,9 +221,10 @@ module Highlander
 
 
         # load components and extract parent stack parameters and mappings
-        @components.each { |component|
+        @subcomponents.each do |component|
 
           component.load @config_overrides[component.name]
+
           # add all of it's stack parameters unless same template has been already processed
           component
               .component_loaded
@@ -180,21 +232,8 @@ module Highlander
               .parameters
               .param_list.each do |param|
 
-            # add stack parameters
-            if param.class == Highlander::Dsl::StackParam
-              # sub-component stack param becomes top-level component param
-              param_name = param.is_global ? param.name : "#{component.name}#{param.name}"
-              stack_param = Highlander::Dsl::ComponentParam.new(
-                  param_name,
-                  param.type,
-                  param.default_value,
-                  param.no_echo
-              )
-              @parameters.addParam stack_param
-            end unless component.param_values.key? param.name
-
             # for map parameters add maps
-            if param.class == Highlander::Dsl::MappingParam
+            if param.class == Cfhighlander::Dsl::MappingParam
               if not param.mapProvider.nil?
                 maps = param.mapProvider.getMaps(component.component_loaded.config)
                 maps.each do |name, map|
@@ -210,13 +249,27 @@ module Highlander
             end
 
           end
+          if @subcomponents_exec.key? component.name
+            component.instance_eval &@subcomponents_exec[component.name]
+          end
+          component.component_loaded.eval_cfndsl
+        end
 
-          # late bind parameter values, once mappings and top level params are extracted
-          component.load_parameters
-        }
+        # in 2nd pass, load parameters
+        # 2nd pass is required as all of cfndsl models need to be populated
+        available_outputs = {}
+        @subcomponents.each do |c|
+          c.component_loaded.outputs.each do |out|
+            available_outputs[out.name] = out
+          end
+        end
+
+        @subcomponents.each do |component|
+          component.resolve_parameter_values available_outputs
+        end
 
         @dependson_components_templates.each do |template|
-          component = Highlander::Dsl::Component.new(self,
+          component = Cfhighlander::Dsl::Subcomponent.new(self,
               template,
               template,
               {},
@@ -228,7 +281,7 @@ module Highlander
       end
 
       def load_extension_exports
-        @components.each do |c|
+        @subcomponents.each do |c|
           component = c.component_loaded
           config = component.config
           if ((config.key? 'lib_export') and (config['lib_export'].key? 'global'))
@@ -237,7 +290,7 @@ module Highlander
             if global_export_config.key? 'cfndsl'
               global_export_config['cfndsl'].each do |exported_extension|
                 extension_file_path = "#{component.component_dir}/ext/cfndsl/#{exported_extension}.rb"
-                @components.each do |cr|
+                @subcomponents.each do |cr|
                   cr.component_loaded.cfndsl_ext_files << extension_file_path unless cr == c
                 end
               end
@@ -248,16 +301,20 @@ module Highlander
       end
 
       def apply_config_overrides
-        @config_overrides.each { |component_name, component_override|
+        @config_overrides.each {|component_name, component_override|
           @named_components[component_name].component_loaded.config.extend(component_override)
         }
       end
 
       def load_configfile_component_config
         if (@config.key? 'components')
-          @config['components'].each { |component_name, component_config|
+          @config['components'].each {|component_name, component_config|
             if component_config.key?('config')
-              @config_overrides[component_name].extend(component_config['config'])
+              if @config_overrides.key? component_name
+                @config_overrides[component_name].extend(component_config['config'])
+              else
+                STDERR.puts("WARN: Overriding config for non-existing component #{component_name}")
+              end
             end
           }
         end
@@ -266,28 +323,28 @@ module Highlander
       def apply_config_exports
         # first export from master to all children
         if ((@config.key? 'config_export') and (@config['config_export']['global']))
-          @config['config_export']['global'].each { |global_export_key|
+          @config['config_export']['global'].each {|global_export_key|
             if @config.key? global_export_key
-              @config_overrides.each { |cname, co|
+              @config_overrides.each {|cname, co|
                 co[global_export_key] = @config[global_export_key]
               }
             end
           }
         end
 
-        @components.each { |component|
+        @subcomponents.each {|component|
           cl = component.component_loaded
           if ((not cl.config.nil?) and (cl.config.key? 'config_export'))
 
             # global config
             if cl.config['config_export'].key? 'global'
-              cl.config['config_export']['global'].each { |global_export_key|
+              cl.config['config_export']['global'].each {|global_export_key|
 
                 # global config is exported to parent and every component
                 if cl.config.key? global_export_key
 
                   # cname is for component name, co for component override
-                  @config_overrides.each { |cname, co|
+                  @config_overrides.each {|cname, co|
 
                     # if templates are different e.g don't export from vpc to vpc
                     config_receiver_component = @named_components[cname]
@@ -295,11 +352,11 @@ module Highlander
                       if (not config_receiver_component.export_config.nil?) and (config_receiver_component.export_config.key? component.template)
                         allow_from_component_name = config_receiver_component.export_config[component.template]
                         if allow_from_component_name == component.name
-                          puts("Exporting key #{global_export_key} from component #{component.name} to #{cname}")
+                          puts("INFO: Exporting key #{global_export_key} from component #{component.name} to #{cname}")
                           co[global_export_key] = cl.config[global_export_key]
                         end
                       else
-                        puts("Exporting key #{global_export_key} from component #{component.name} to #{cname}")
+                        puts("INFO: Exporting key #{global_export_key} from component #{component.name} to #{cname}")
                         co[global_export_key] = cl.config[global_export_key]
                       end
                     end
@@ -313,7 +370,7 @@ module Highlander
             end
 
             if cl.config['config_export'].key? 'component'
-              cl.config['config_export']['component'].each { |component_name, export_keys|
+              cl.config['config_export']['component'].each {|component_name, export_keys|
                 # check if there is configuration of export from this component
                 # and if there is export configuration for given component name
 
@@ -322,7 +379,7 @@ module Highlander
                   if @config_overrides.key? component.export_config[component_name]
                     # override the config
                     real_component_name = component.export_config[component_name]
-                    export_keys.each { |export_component_key|
+                    export_keys.each {|export_component_key|
                       puts("Exporting config for key=#{export_component_key} from #{component.name} to #{real_component_name}")
                       if not @config_overrides[real_component_name].key? export_component_key
                         @config_overrides[real_component_name][export_component_key] = {}
@@ -333,7 +390,7 @@ module Highlander
                     STDERR.puts("Trying to export configuration for non-existant component #{component.export_config[component_name]}")
                   end
                 elsif @config_overrides.key? component_name
-                  export_keys.each { |export_component_key|
+                  export_keys.each {|export_component_key|
                     puts("Exporting config for key=#{export_component_key} from #{component.name} to #{component_name}")
                     if not @config_overrides[component_name].key? export_component_key
                       @config_overrides[component_name][export_component_key] = {}
@@ -353,9 +410,10 @@ module Highlander
       end
 
       def load_explicit_component_config
-        @component_configs.each { |component_name, component_config|
+        @component_configs.each {|component_name, component_config|
           @config_overrides[component_name].extend(component_config)
         }
+
       end
 
       def distribute_bucket=(value)
@@ -368,15 +426,15 @@ module Highlander
         build_distribution_url
       end
 
-      def name=(value)
-        self.Name(value)
-      end
+      # def name=(value)
+      #   self.Name(value)
+      # end
 
       def build_distribution_url
         if not (@distribution_bucket.nil? or @distribution_prefix.nil?)
           @distribute_url = "https://#{@distribution_bucket}.s3.amazonaws.com/#{@distribution_prefix}"
           @distribute_url = "#{@distribute_url}/#{@version}" unless @version.nil?
-          @components.each { |component|
+          @subcomponents.each {|component|
             component.distribute_bucket = @distribution_bucket unless @distribution_bucket.nil?
             component.distribute_prefix = @distribution_prefix unless @distribution_prefix.nil?
             component.version = @version unless @version.nil?
@@ -391,13 +449,17 @@ module Highlander
 
 end
 
-def HighlanderComponent(&block)
-  instance = Highlander::Dsl::Template.new
+def CfhighlanderTemplate(&block)
 
-  puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
-      "\n\tConfig:#{@config}"
-
-  component_config = @config
+  if @parent_dsl.nil?
+    instance = Cfhighlander::Dsl::HighlanderTemplate.new
+    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+        "\n\tConfig:#{@config}"
+  else
+    instance = @parent_dsl
+    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+        "\n\tConfig:#{@config}\n\tParent: #{@parent_template}"
+  end
 
   instance.config = @config
 
@@ -407,7 +469,12 @@ def HighlanderComponent(&block)
 
   unless @version.nil?
     instance.version = @version
+    instance.config['component_version'] = @version
   end
+
+
+  instance.name = @template.template_name
+  instance.instance_eval(&block)
 
   unless @distribution_bucket.nil?
     instance.DistributionBucket(@distribution_bucket)
@@ -415,14 +482,44 @@ def HighlanderComponent(&block)
   unless @distribution_prefix.nil?
     instance.DistributionPrefix(@distribution_prefix)
   end
+  unless @distribution_format.nil?
+    instance.Forma
+  end
 
-  instance.instance_eval(&block)
-  if instance.name.nil?
-    instance.name = @name
+  # process convention over configuration componentname.config.yaml files
+  @potential_subcomponent_overrides.each do |name, config|
+
+    # if there is component with given file name
+    if (not instance.subcomponents.find {|s| s.name == name}.nil?)
+      instance.config['components'] = {} unless instance.config.key? 'components'
+      instance.config['components'][name] = {} unless instance.config['components'].key? name
+      instance.config['components'][name]['config'] = {} unless instance.config['components'][name].key? 'config'
+
+      # prevention of infinite recursion when applied to legacy configurations
+      if config.key? 'components'
+        if config['components'].key? name
+          if config['components'][name].key? 'config'
+            config = config['components'][name]['config']
+          end
+        end
+      end
+
+      instance.config['components'][name]['config'].extend config
+    end
   end
 
   # load sub-components
   instance.loadComponents
 
   return instance
+end
+
+def CfhighlanderComponent(&block)
+  STDERR.puts("DEPRECATED: #{@template.template_name}: use CfhighlanderTemplate instead of CfhighlanderComponent")
+  CfhighlanderTemplate(&block)
+end
+
+def HighlanderComponent(&block)
+  STDERR.puts("DEPRECATED: #{@template.template_name}: use CfhighlanderTemplate instead of HighlanderComponent")
+  CfhighlanderTemplate(&block)
 end

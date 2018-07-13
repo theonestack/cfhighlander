@@ -12,7 +12,7 @@ require 'highline/import'
 require 'zip'
 require_relative './util/zip.util'
 
-module Highlander
+module Cfhighlander
 
   module Compiler
 
@@ -29,11 +29,12 @@ module Highlander
           :cfn_output_location,
           :cfn_template_paths,
           :silent_mode,
-          :lambda_src_paths
+          :lambda_src_paths,
+          :process_lambdas
 
       def initialize(component)
 
-        @workdir = ENV['HIGHLANDER_WORKDIR']
+        @workdir = ENV['CFHIGHLANDER_WORKDIR']
         @component = component
         @sub_components = []
         @component_name = component.highlander_dsl.name.downcase
@@ -43,17 +44,25 @@ module Highlander
         @lambdas_processed = false
         @silent_mode = false
         @lambda_src_paths = []
+        @config_yaml_path = nil
+        @cfn_model = nil
+        @process_lambdas = true
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
           Dir["#{global_extensions_folder}/*.rb"].each { |f| @@global_extensions_paths << f }
         end
 
-        @component.highlander_dsl.components.each do |sub_component|
-          sub_component_compiler = Highlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
+        @component.highlander_dsl.subcomponents.each do |sub_component|
+          sub_component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
           sub_component_compiler.component_name = sub_component.name
           @sub_components << sub_component_compiler
         end
+      end
+
+      def process_lambdas=(value)
+        @process_lambdas = value
+        @sub_components.each { |scc| scc.process_lambdas=value }
       end
 
       def silent_mode=(value)
@@ -67,7 +76,7 @@ module Highlander
         dsl = @component.highlander_dsl
         component_cfndsl = @component.cfndsl_content
 
-        @component.highlander_dsl.components.each { |sc|
+        @component.highlander_dsl.subcomponents.each { |sc|
           sc.distribution_format = out_format
         }
 
@@ -100,33 +109,38 @@ module Highlander
 
       end
 
-      def compileCloudFormation(format = 'yaml')
-
-
+      def evaluateCloudFormation(format = 'yaml')
         #compile cfndsl templates first
         compileCfnDsl format unless @cfndsl_compiled
 
+        # write config
+        cfndsl_opts = []
+        cfndsl_opts.push([:yaml, @config_yaml_path])
+
+        # grab cfndsl model
+        model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
+        @cfn_model = model
+        return model
+      end
+
+      def compileCloudFormation(format = 'yaml')
+
         dsl = @component.highlander_dsl
-        component_cfndsl = @component.cfndsl_content
 
         # create out dir if not there
         @cfn_output_location = "#{@workdir}/out/#{format}"
         output_dir = @cfn_output_location
         FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 
-        # write config
-        config_yaml_path = writeConfig
-
 
         # compile templates
-        output_path = "#{output_dir}/#{component_name}.compiled.#{format}"
+        output_path = "#{output_dir}/#{@component_name}.compiled.#{format}"
         @cfn_template_paths << output_path
         # configure cfndsl
-        cfndsl_opts = []
-        cfndsl_opts.push([:yaml, config_yaml_path])
+
 
         # grab cfndsl model
-        model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
+        model = evaluateCloudFormation
 
         # write resulting cloud formation template
         if format == 'json'
@@ -165,18 +179,18 @@ module Highlander
           end
         end
         @config_written = true
-        config_yaml_path
+        @config_yaml_path = config_yaml_path
+        return @config_yaml_path
       end
 
       def processLambdas()
-
         @component.highlander_dsl.lambda_functions_keys.each do |lfk|
           resolver = LambdaResolver.new(@component,
               lfk,
               @workdir,
               (not @silent_mode)
           )
-          @lambda_src_paths += resolver.generateSourceArchives
+          @lambda_src_paths += resolver.generateSourceArchives if @process_lambdas
           resolver.mergeComponentConfig
         end
 
@@ -225,6 +239,7 @@ module Highlander
 
           # download file if code remote archive
           puts "Packaging AWS Lambda function #{name}...\n"
+          puts "Destination archive is #{full_destination_path}"
           if lambda_config['code'].include? 'http'
             md5 = Digest::MD5.new
             md5.update lambda_config['code']
@@ -235,13 +250,14 @@ module Highlander
               FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
             elsif File.file? cached_location
               puts "Using cached download - '#{cached_location}'"
-              FileUtils.copy(cached_location, "#{out_folder}/src.zip")
+              FileUtils.copy(cached_location, full_destination_path)
             else
               puts "Downloading file #{lambda_config['code']} ..."
               download = open(lambda_config['code'])
               IO.copy_stream(download, "#{out_folder}/src.zip")
               FileUtils.mkdir_p('.cache/lambdas')
               FileUtils.copy("#{out_folder}/src.zip", cached_location)
+              FileUtils.copy("#{out_folder}/src.zip", full_destination_path)
               puts "Download complete, caching in #{cached_location}"
               cached_downloads[lambda_config['code']] = cached_location
             end
@@ -260,6 +276,7 @@ module Highlander
             # executing package command can generate files. We DO NOT want this file in source directory,
             # but rather in intermediate directory
             tmp_source_dir = "#{@workdir}/out/lambdas/tmp/#{name}"
+            FileUtils.rmtree(File.dirname(tmp_source_dir)) if File.exist? tmp_source_dir
             FileUtils.mkpath(File.dirname(tmp_source_dir))
             FileUtils.copy_entry(lambda_source_dir, tmp_source_dir)
             lambda_source_dir = tmp_source_dir
@@ -281,7 +298,7 @@ module Highlander
               end
             end
             File.delete full_destination_path if File.exist? full_destination_path
-            zip_generator = Highlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
+            zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
             zip_generator.write
 
           end

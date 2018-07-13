@@ -9,28 +9,26 @@
 
 require 'thor'
 require 'rubygems'
-require_relative '../lib//highlander.compiler'
-require_relative '../lib/highlander.factory'
-require_relative '../lib/highlander.publisher'
-require_relative '../lib/highlander.validator'
+require_relative '../lib/cfhighlander.compiler'
+require_relative '../lib/cfhighlander.factory'
+require_relative '../lib/cfhighlander.publisher'
+require_relative '../lib/cfhighlander.validator'
 
 class HighlanderCli < Thor
 
-
-
-  package_name "highlander"
+  package_name "cfhighlander"
 
   desc 'configcompile component[@version]', 'Compile Highlander components configuration'
 
-  def configcompile(component_name)
+  def configcompile(template_name)
 
     # find and load component
-    component_loader = Highlander::Factory::ComponentFactory.new
-    component = component_loader.findComponent(component_name)
+    component_loader = Cfhighlander::Factory::ComponentFactory.new
+    component = component_loader.loadComponentFromTemplate(template_name)
     component.load
 
     # compile cfndsl template
-    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
     component_compiler.writeConfig(true)
   end
 
@@ -50,7 +48,7 @@ class HighlanderCli < Thor
     component = build_component(options, component_name)
 
     # compile cfndsl template
-    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
     component_compiler.silent_mode = options[:quiet]
     out_format = options[:format]
     component_compiler.compileCfnDsl out_format
@@ -71,16 +69,27 @@ class HighlanderCli < Thor
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
-  def cfcompile(component_name)
+  def cfcompile(component_name = nil)
+
+    if component_name.nil?
+      candidates = Dir["*.cfhighlander.rb"]
+      if candidates.size == 0
+        self.help('cfcompile')
+        exit -1
+      else
+        component_name = candidates[0].gsub('.cfhighlander.rb','')
+      end
+    end
+
     component = build_component(options, component_name)
 
     # compile cloud formation
-    component_compiler = Highlander::Compiler::ComponentCompiler.new(component)
+    component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
     component_compiler.silent_mode = options[:quiet]
     out_format = options[:format]
     component_compiler.compileCloudFormation out_format
     if options[:validate]
-      component_validator = Highlander::Cloudformation::Validator.new(component)
+      component_validator = Cfhighlander::Cloudformation::Validator.new(component)
       component_validator.validate(component_compiler.cfn_template_paths, out_format)
     end
     component_compiler
@@ -103,7 +112,7 @@ class HighlanderCli < Thor
 
   def cfpublish(component_name)
     compiler = cfcompile(component_name)
-    publisher = Highlander::Publisher::Component.new(compiler.component, false)
+    publisher = Cfhighlander::Publisher::ComponentPublisher.new(compiler.component, false)
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
   end
 
@@ -117,42 +126,47 @@ class HighlanderCli < Thor
   method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
       :desc => 'Distribution component version, defaults to latest'
 
-  def publish(component_name)
+  def publish(template_name)
     component_version = options[:version]
     distribution_bucket = options[:dstbucket]
     distribution_prefix = options[:dstprefix]
 
     # find and load component
-    component_loader = Highlander::Factory::ComponentFactory.new
-    component = component_loader.findComponent(component_name)
+    component_loader = Cfhighlander::Factory::ComponentFactory.new
+    component = component_loader.loadComponentFromTemplate(template_name)
     component.version = component_version
     component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
     component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
     component.load
 
-    publisher = Highlander::Publisher::Component.new(component, true)
+    publisher = Cfhighlander::Publisher::ComponentPublisher.new(component, true)
     publisher.publishComponent
   end
 
 end
 
 # build component from passed cli options
-def build_component(options, component_name)
-  if ENV['HIGHLANDER_WORKDIR'].nil?
-    ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
-  end
+def build_component(options, template_name)
+
   component_version = options[:version]
   distribution_bucket = options[:dstbucket]
   distribution_prefix = options[:dstprefix]
 
   # find and load component
-  component_loader = Highlander::Factory::ComponentFactory.new
-  component = component_loader.findComponent(component_name)
+  component_loader = Cfhighlander::Factory::ComponentFactory.new
+  component = component_loader.loadComponentFromTemplate(template_name)
   component.version = component_version unless component_version.nil?
   component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
   component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
   component.load
   component
+end
+
+if ENV['CFHIGHLANDER_WORKDIR'].nil?
+  ENV['CFHIGHLANDER_WORKDIR'] = Dir.pwd
+end
+if ENV['HIGHLANDER_WORKDIR'].nil?
+  ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
 end
 
 HighlanderCli.start
