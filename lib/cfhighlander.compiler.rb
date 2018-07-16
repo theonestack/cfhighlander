@@ -271,14 +271,25 @@ module Cfhighlander
             end
           else
             # zip local code
-            zip_options = ''
-            full_path = "#{@component_dir}/lambdas/#{lambda_config['code']}"
+            component = @component
+            component_dir = component.template.template_location
+            full_path = "#{component_dir}/lambdas/#{lambda_config['code']}"
+
+            until (File.exist? full_path or component_dir.nil?)
+              parent_exists = (not component.extended_component.nil?)
+              component = component.extended_component if parent_exists
+              component_dir = component.template.template_location if parent_exists
+              full_path = "#{component_dir}/lambdas/#{lambda_config['code']}" if parent_exists
+              component_dir = nil unless parent_exists
+            end
+            if component_dir.nil?
+              STDERR.puts "ERROR: Could not find source code directory for lambda function #{name} in component #{@component.name}"
+              exit -9
+            end
 
             # lambda source can be either path to file or directory within that file
             # optionally, lambda source code
             lambda_source_dir = File.dirname(full_path)
-            lambda_source_file = File.basename(full_path)
-            lambda_source_file = '.' if Pathname.new(full_path).directory?
             lambda_source_dir = full_path if Pathname.new(full_path).directory?
 
             # executing package command can generate files. We DO NOT want this file in source directory,

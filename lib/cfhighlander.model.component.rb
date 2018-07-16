@@ -174,7 +174,7 @@ module Cfhighlander
         if not @parent_template.nil?
           extended_component = @factory.loadComponentFromTemplate(@parent_template)
           extended_component.is_parent_component = true
-          extended_component.load()
+          extended_component.load(@config)
 
           @config = extended_component.config.extend(@config)
           @mappings = extended_component.mappings.extend(@mappings)
