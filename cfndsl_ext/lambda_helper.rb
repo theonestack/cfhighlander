@@ -61,6 +61,9 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
           FunctionName(Ref(name))
           Action('lambda:InvokeFunction')
           Principal(source['principal'])
+          if source.key? 'source_arn'
+            SourceArn source['source_arn']
+          end
         end
         i += 1
       end
