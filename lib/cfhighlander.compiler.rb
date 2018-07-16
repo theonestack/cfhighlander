@@ -50,7 +50,7 @@ module Cfhighlander
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
-          Dir["#{global_extensions_folder}/*.rb"].each { |f| @@global_extensions_paths << f }
+          Dir["#{global_extensions_folder}/*.rb"].each {|f| @@global_extensions_paths << f}
         end
 
         @component.highlander_dsl.subcomponents.each do |sub_component|
@@ -62,12 +62,12 @@ module Cfhighlander
 
       def process_lambdas=(value)
         @process_lambdas = value
-        @sub_components.each { |scc| scc.process_lambdas=value }
+        @sub_components.each {|scc| scc.process_lambdas = value}
       end
 
       def silent_mode=(value)
         @silent_mode = value
-        @sub_components.each { |scc| scc.silent_mode=value }
+        @sub_components.each {|scc| scc.silent_mode = value}
       end
 
       def compileCfnDsl(out_format)
@@ -76,7 +76,7 @@ module Cfhighlander
         dsl = @component.highlander_dsl
         component_cfndsl = @component.cfndsl_content
 
-        @component.highlander_dsl.subcomponents.each { |sc|
+        @component.highlander_dsl.subcomponents.each {|sc|
           sc.distribution_format = out_format
         }
 
@@ -89,7 +89,7 @@ module Cfhighlander
             'dsl' => dsl,
             'component_cfndsl' => component_cfndsl,
             'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files)
-        }).instance_eval { binding })
+        }).instance_eval {binding})
 
         # write to output file
         output_dir = "#{@workdir}/out/cfndsl"
@@ -100,7 +100,7 @@ module Cfhighlander
         puts "cfndsl template for #{dsl.name} written to #{output_path}"
         @cfndsl_compiled_path = output_path
 
-        @sub_components.each { |subcomponent_compiler|
+        @sub_components.each {|subcomponent_compiler|
           puts "Rendering sub-component cfndsl: #{subcomponent_compiler.component_name}"
           subcomponent_compiler.compileCfnDsl out_format
         }
@@ -232,8 +232,16 @@ module Cfhighlander
           file_name = "#{name}.#{@component.name}.#{@component.version}.#{timestamp}.zip"
           @metadata['path'][name] = file_name
           full_destination_path = "#{out_folder}#{file_name}"
+          info_path = "#{out_folder}#{file_name}.info.yaml"
           archive_paths << full_destination_path
           FileUtils.mkdir_p out_folder
+          File.write(info_path, {
+              'component' => @component.name,
+              'function' => name,
+              'packagedAt' => timestamp,
+              'config' => lambda_config
+          }.to_yaml)
+
           # clear destination if already there
           FileUtils.remove full_destination_path if File.exist? full_destination_path
 
@@ -302,7 +310,10 @@ module Cfhighlander
             zip_generator.write
 
           end
-
+          # add version information to avoid same package ever deployed 2 times
+          Zip::File.open(full_destination_path) do |zipfile|
+            zipfile.add 'hlpackage_info.txt', info_path
+          end
           sha256 = Digest::SHA256.file full_destination_path
           sha256 = sha256.base64digest
           puts "Created zip package #{full_destination_path} for lambda #{name} with digest #{sha256}"
