@@ -5,6 +5,7 @@ module Cfhighlander
 
       attr_accessor :config
 
+      # intrinsic functions
 
       def GetAtt(resource, property)
         return FnGetAtt(resource, property)
@@ -15,6 +16,94 @@ module Cfhighlander
             'Fn::GetAtt' => [resource, property]
         }
       end
+
+      def FnImportValue(value)
+        return {
+            'Fn::ImportValue' => value
+        }
+      end
+
+      def FnSub(string, replacementMap = nil)
+        if replacementMap.nil?
+          return { 'Fn::Sub' => string }
+        else
+          return { 'Fn::Sub' => [string, replacementMap] }
+        end
+      end
+
+      def FnSplit(delimiter, source)
+        return { 'Fn::Split' => [delimiter, source] }
+      end
+
+      def FnSelect(index, list)
+        return { 'Fn::Select' => [index, list] }
+      end
+
+      def FnGetAZs(region = nil)
+        if region.nil?
+          region = AWSStackRegion()
+        end
+        return { 'Fn::GetAZs' => region }
+      end
+
+      def FnCidr(ip_block, count, sizeMask)
+        return { 'Fn::Cidr' => [ip_block, count, sizeMask] }
+      end
+
+      def FnBase64(value)
+        return { 'Fn::Base64' => value }
+      end
+
+      # pseudo reference
+      def AWSStackRegion
+        return Ref('AWS::Region')
+      end
+
+      def AWSStackName
+        return Ref('AWS::StackName')
+      end
+
+      def AWSAccountId
+        return Ref('AWS::AccountId')
+      end
+
+      def AWSURLSuffix
+        return Ref('AWS::URLSuffix')
+      end
+
+      def AWSPartition
+        return Ref('AWS::Partition')
+      end
+
+      def AWSNoValue
+        return Ref('AWS::NoValue')
+      end
+
+      def AWSNotificationARNs
+        return Ref('AWS::NotificationARNs')
+      end
+
+      # logic intrinsic functions
+      def FnIf(condition, true_branch, false_branch)
+        return { 'Fn::If' => [condition, true_branch, false_branch] }
+      end
+
+      def FnAnd(*args)
+        return { 'Fn::And' => args }
+      end
+
+      def FnEquals(val1, val2)
+        return { 'Fn::Equals' => [val1, val2] }
+      end
+
+      def FnNot(condition)
+        return { 'Fn::Not' => [condition] }
+      end
+
+      def FnOr(*args)
+        return { 'Fn::Or' => args }
+      end
+
 
       def Ref(resource)
         return {
