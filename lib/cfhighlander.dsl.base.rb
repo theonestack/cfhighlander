@@ -19,7 +19,7 @@ module Cfhighlander
 
       def FnImportValue(value)
         return {
-            'Fn::ImportValue' => [value]
+            'Fn::ImportValue' => value
         }
       end
 
