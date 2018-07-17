@@ -3,12 +3,12 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'cfhighlander'
-  s.version = '0.3.2'
+  s.version = '0.3.3'
   s.version = "#{s.version}.alpha.#{Time.now.getutc.to_i}" if ENV['TRAVIS'] and ENV['TRAVIS_BRANCH'] != 'master'
   s.date = Date.today.to_s
   s.summary = 'DSL on top of cfndsl. Manage libraries of cloudformation components'
   s.description = ''
-  s.authors = [ 'Nikola Tosic', 'Aaron Walker']
+  s.authors = [ 'Nikola Tosic', 'Aaron Walker', 'Angus Vine']
   s.email = 'theonestackcfhighlander@gmail.com'
   s.files = FileList['cfndsl_ext/**/*', 'hl_ext/*', 'templates/*.erb', 'lib/**/*.rb', 'bin/*', 'README.md']
   s.homepage = 'https://github.com/theonestack/cfhighlander/blob/master/README.md'
