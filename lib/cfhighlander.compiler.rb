@@ -248,78 +248,93 @@ module Cfhighlander
           # download file if code remote archive
           puts "Packaging AWS Lambda function #{name}...\n"
           puts "Destination archive is #{full_destination_path}"
-          if lambda_config['code'].include? 'http'
-            md5 = Digest::MD5.new
-            md5.update lambda_config['code']
-            hash = md5.hexdigest
-            cached_location = "#{@workdir}/.cache/lambdas/#{hash}"
-            if cached_downloads.key? lambda_config['code']
-              puts "Using already downloaded archive #{lambda_config['code']}"
-              FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
-            elsif File.file? cached_location
-              puts "Using cached download - '#{cached_location}'"
-              FileUtils.copy(cached_location, full_destination_path)
-            else
-              puts "Downloading file #{lambda_config['code']} ..."
+
+          md5 = Digest::MD5.new
+          md5.update lambda_config['code']
+          hash = md5.hexdigest
+          cached_location = "#{@workdir}/.cache/lambdas/#{hash}"
+          if cached_downloads.key? lambda_config['code']
+            puts "Using already downloaded archive #{lambda_config['code']}"
+            FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
+          elsif File.file? cached_location
+            puts "Using cached download - '#{cached_location}'"
+            FileUtils.copy(cached_location, full_destination_path)
+          else
+            if lambda_config['code'].include? 'http'
+              puts "INFO Downloading lambda #{name} source from #{lambda_config['code']}"
               download = open(lambda_config['code'])
               IO.copy_stream(download, "#{out_folder}/src.zip")
               FileUtils.mkdir_p('.cache/lambdas')
               FileUtils.copy("#{out_folder}/src.zip", cached_location)
               FileUtils.copy("#{out_folder}/src.zip", full_destination_path)
-              puts "Download complete, caching in #{cached_location}"
+              puts "INFO lambda #{name} source cached to #{cached_location}"
               cached_downloads[lambda_config['code']] = cached_location
-            end
-          else
-            # zip local code
-            component = @component
-            component_dir = component.template.template_location
-            full_path = "#{component_dir}/lambdas/#{lambda_config['code']}"
+            elsif lambda_config['code'].include? 's3://'
+              parts = lambda_config['code'].split('/')
+              if parts.size < 4
+                STDERR.puts "ERROR: Lambda function source code from s3 should be in s3://bucket/path format"
+                exit -8
+              end
+              bucket = parts[2]
+              key = parts.drop(3).join('/')
+              s3 = Aws::S3::Client.new({ region: s3_bucket_region(bucket) })
+              puts "INFO Downloading lambda #{name} source from #{lambda_config['code']}"
+              s3.get_object({ bucket: bucket, key: key, response_target: cached_location })
+              puts "INFO lambda #{name} source cached to #{cached_location}"
+              FileUtils.copy(cached_location, full_destination_path)
+              cached_downloads[lambda_config['code']] = cached_location
+            else
+              # zip local code
+              component = @component
+              component_dir = component.template.template_location
+              full_path = "#{component_dir}/lambdas/#{lambda_config['code']}"
 
-            until (File.exist? full_path or component_dir.nil?)
-              parent_exists = (not component.extended_component.nil?)
-              component = component.extended_component if parent_exists
-              component_dir = component.template.template_location if parent_exists
-              full_path = "#{component_dir}/lambdas/#{lambda_config['code']}" if parent_exists
-              component_dir = nil unless parent_exists
-            end
-            if component_dir.nil?
-              STDERR.puts "ERROR: Could not find source code directory for lambda function #{name} in component #{@component.name}"
-              exit -9
-            end
-
-            # lambda source can be either path to file or directory within that file
-            # optionally, lambda source code
-            lambda_source_dir = File.dirname(full_path)
-            lambda_source_dir = full_path if Pathname.new(full_path).directory?
-
-            # executing package command can generate files. We DO NOT want this file in source directory,
-            # but rather in intermediate directory
-            tmp_source_dir = "#{@workdir}/out/lambdas/tmp/#{name}"
-            FileUtils.rmtree(File.dirname(tmp_source_dir)) if File.exist? tmp_source_dir
-            FileUtils.mkpath(File.dirname(tmp_source_dir))
-            FileUtils.copy_entry(lambda_source_dir, tmp_source_dir)
-            lambda_source_dir = tmp_source_dir
-
-            # Lambda function source code allows pre-processing (e.g. install code dependencies)
-            unless lambda_config['package_cmd'].nil?
-              puts "Following code will be executed to generate lambda function #{name}:\n\n#{lambda_config['package_cmd']}\n\n"
-
-              if @confirm_code_execution
-                exit -7 unless HighLine.agree('Proceed (y/n)?')
+              until (File.exist? full_path or component_dir.nil?)
+                parent_exists = (not component.extended_component.nil?)
+                component = component.extended_component if parent_exists
+                component_dir = component.template.template_location if parent_exists
+                full_path = "#{component_dir}/lambdas/#{lambda_config['code']}" if parent_exists
+                component_dir = nil unless parent_exists
+              end
+              if component_dir.nil?
+                STDERR.puts "ERROR: Could not find source code directory for lambda function #{name} in component #{@component.name}"
+                exit -9
               end
 
-              package_cmd = "cd #{lambda_source_dir} && #{lambda_config['package_cmd']}"
-              puts 'Processing package command...'
-              package_result = system(package_cmd)
-              unless package_result
-                puts "Error packaging lambda function, following command failed\n\n#{package_cmd}\n\n"
-                exit -4
-              end
-            end
-            File.delete full_destination_path if File.exist? full_destination_path
-            zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
-            zip_generator.write
+              # lambda source can be either path to file or directory within that file
+              # optionally, lambda source code
+              lambda_source_dir = File.dirname(full_path)
+              lambda_source_dir = full_path if Pathname.new(full_path).directory?
 
+              # executing package command can generate files. We DO NOT want this file in source directory,
+              # but rather in intermediate directory
+              tmp_source_dir = "#{@workdir}/out/lambdas/tmp/#{name}"
+              FileUtils.rmtree(File.dirname(tmp_source_dir)) if File.exist? tmp_source_dir
+              FileUtils.mkpath(File.dirname(tmp_source_dir))
+              FileUtils.copy_entry(lambda_source_dir, tmp_source_dir)
+              lambda_source_dir = tmp_source_dir
+
+              # Lambda function source code allows pre-processing (e.g. install code dependencies)
+              unless lambda_config['package_cmd'].nil?
+                puts "Following code will be executed to generate lambda function #{name}:\n\n#{lambda_config['package_cmd']}\n\n"
+
+                if @confirm_code_execution
+                  exit -7 unless HighLine.agree('Proceed (y/n)?')
+                end
+
+                package_cmd = "cd #{lambda_source_dir} && #{lambda_config['package_cmd']}"
+                puts 'Processing package command...'
+                package_result = system(package_cmd)
+                unless package_result
+                  puts "Error packaging lambda function, following command failed\n\n#{package_cmd}\n\n"
+                  exit -4
+                end
+              end
+              File.delete full_destination_path if File.exist? full_destination_path
+              zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
+              zip_generator.write
+
+            end
           end
           # add version information to avoid same package ever deployed 2 times
           Zip::File.open(full_destination_path) do |zipfile|
