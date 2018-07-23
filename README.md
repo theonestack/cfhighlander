@@ -131,6 +131,26 @@ via CLI (`--dstbucket`, `--dstprefix`, `-v`). Default distribution bucket and pr
 `DistributionBucket`, `DistributionBucket`, `DistributionPrefix` or `ComponentDistribution` statements. Check DSL specification
 for more details on this statements. Version defaults to `latest` if not explicitly given using `-v` switch
 
+If no distribution options is given using mentioned CLI options or DSL statements,
+bucket will be automatically created for you. Bucket name defaults to 
+`$ACCOUNT.$REGION.cfhighlander.templates`, with `/published-templates`
+prefix. 
+
+*cfpublish* command will give you quick launch CloudFirmation stack URL to assist
+you in creating your stack:
+
+```bash
+$ cfpublish vpc@1.2.0
+...
+...
+...
+
+Use following url to launch CloudFormation stack
+
+https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?filter=active&templateURL=https://123456789012.ap-southeast-2.cfhighlander.templates.s3.amazonaws.com/published-templates/vpc/1.2.0/vpc.compiled.yaml&stackName=vpc
+
+```
+
 
 #### configcompile
 
