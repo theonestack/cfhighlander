@@ -13,6 +13,7 @@ require_relative '../lib/cfhighlander.compiler'
 require_relative '../lib/cfhighlander.factory'
 require_relative '../lib/cfhighlander.publisher'
 require_relative '../lib/cfhighlander.validator'
+require_relative '../hl_ext/aws_helper'
 
 class HighlanderCli < Thor
 
@@ -69,7 +70,7 @@ class HighlanderCli < Thor
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
-  def cfcompile(component_name = nil)
+  def cfcompile(component_name = nil, autogenerate_dist = false)
 
     if component_name.nil?
       candidates = Dir["*.cfhighlander.rb"]
@@ -82,6 +83,13 @@ class HighlanderCli < Thor
     end
 
     component = build_component(options, component_name)
+
+    if component.distribution_bucket.nil? or component.distribution_prefix.nil?
+      component.distribution_bucket="#{aws_account_id()}.#{aws_current_region()}.cfhighlander.templates" if component.distribution_bucket.nil?
+      component.distribution_prefix="published-templates/#{component.name}" if component.distribution_prefix.nil?
+      puts "INFO: Reloading component, as auto-generated distribution settings  are being applied..."
+      component.load
+    end if autogenerate_dist
 
     # compile cloud formation
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
@@ -111,9 +119,12 @@ class HighlanderCli < Thor
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
   def cfpublish(component_name)
-    compiler = cfcompile(component_name)
+    compiler = cfcompile(component_name, true)
     publisher = Cfhighlander::Publisher::ComponentPublisher.new(compiler.component, false)
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
+
+    puts "\n\nUse following url to launch CloudFormation stack\n\n#{publisher.getLaunchStackUrl}\n\n"
+
   end
 
 
