@@ -1,17 +1,133 @@
 [![Build Status](https://travis-ci.org/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.org/theonestack/cfhighlander)
 
-# Cfhighlander
+# Intro
 
-Cfhighlander is DSL processor that enables composition and orchestration of Amazon CloudFormation templates 
-written using [CfnDsl](https://github.com/cfndsl/cfndsl) in an abstract way. It tries to tackle problem of merging multiple templates into master
-template in an elegant way, so higher degree of template reuse can be achieved. It does so by formalising commonly
-used cfndsl template composition patterns via DSL statements. For an example, passing output of one stack into other stack is done
-automatically if parameter and output names are the same, 
-rather than wiring them manually in 'master' cfndsl template. For this example to 
-work, parent component will have to pull in both component rendering output values, and component pulling them in
-as parameters. Cfhighlander allows for greater reuse of component templates by allowing references to templates
-via git urls, and s3 urls. [Theonestack](https://github.com/theonestack) has several prebuilt component templates to use,
-with repositories from this org being one of the default sources for searching component templates.
+Cfhighlander is a feature rich tool and DSL for infrastructure
+coders working with CloudFormation templates.
+
+It was designed to
+
+-  Abstract AWS resources or sets of resources as
+   **components** by describing them using Cfhighlander
+   DSL and [cfndsl](https://github.com/cfndsl/cfndsl).
+
+- Produce, validate and publish CloudFormation templates
+  from those components
+
+- Enable infrastructure coders to use concepts of **inheritance**
+  and **composition** when designing components. In other words
+  allowing components to be *extended*, and allowing components
+  to be built from other components.
+
+- Allow for easy **discovery** and consumption of components from
+  different sources (git repository, file system, S3 buckets)
+
+ - Allow component developers and consumers to take
+   more **descriptive** approach using DSL, compared to
+   instructional approach.
+
+# Installation
+
+```
+gem install cfhighlander
+```
+
+# Example
+
+Passing output value from one substack to another substack within root stack
+has to be done manually - either if you build JSON/YAML templates by hand,
+or if using `Cfndsl`. With cfhighlander, this code is automatically generated for you
+
+```ruby
+
+CfhighlanderTemplate do
+
+  # explicit configuration for vpc component
+  vpc_config = { 'maximum_availability_zones' => 2 }
+
+  # declare vpc component, and pass some parameters
+  # to it
+  Component name: 'vpc',
+        template: 'vpc@master.snapshot',
+        config: vpc_config do
+    parameter name: 'Az0', value: FnSelect(0,FnGetAZs())
+    parameter name: 'Az1', value: FnSelect(1,FnGetAZs())
+    parameter name: 'DnsDomain', value: 'example.com'
+    parameter name: 'StackMask', value: '16'
+  end
+
+  # Compiled cloudformation template will
+  # pass Compute subnets from VPC into ECS Cluster
+  Component name: 'ecs', template:'ecs@master.snapshot' do
+    parameter name: 'DnsDomain', value: 'example.com'
+  end
+
+  # feed mapping maparameters to components
+  addMapping('EnvironmentType',{
+    'development' => {
+      'MaxNatGateways'=>'1',
+      'EcsAsgMin' => 1,
+      'EcsAsgMax' => 1,
+      'KeyName' => 'default',
+      'InstanceType' => 't2.large',
+      'SingleNatGateway' => true
+    }
+  })
+end
+
+```
+
+... compile the template with ... 
+
+```shell
+cfcompile application.cfhighlander.rb
+```
+
+... and check how the subnets are being passed around ..
+
+```shell
+$ cat out/yaml/app.compiled.yaml | grep  -A3 SubnetCompute0
+          SubnetCompute0:
+            Fn::GetAtt:
+            - vpc
+            - Outputs.SubnetCompute0
+          SubnetCompute1:
+            Fn::GetAtt:
+            - vpc
+
+```
+
+
+
+# Library
+
+As part of [theonestack org](https://github.com/theonestack/), there is several publicly available components.
+
+- [vpc](https://github.com/theonestack/hl-component-vpc) - Has separation of public
+   and private subnets, configurable number of NAT Gateways (per AZ or single for all
+  subnets, handles all of the complex routing stuff)
+
+- [ecs](https://github.com/theonestack/hl-component-ecs) - ECS Cluster deployed in VPC Compute Subnets
+- [bastion](https://github.com/theonestack/hl-component-bastion) - Deployed into VPC Public
+  Subnets, with configuration for whitelisting IP addresses to access port 22
+- [ecs-service](https://github.com/theonestack/hl-component-ecs-service) - Deploy containerised apps running on ECS Clusters
+- [loadbalancer](https://github.com/theonestack/hl-component-loadbalancer)
+- [sns](https://github.com/theonestack/hl-component-sns) - SNS Topics, with implemented
+Lambda function to post Slack messages
+- [efs](https://github.com/theonestack/hl-component-efs) - Elastic File System, can be
+used in conjuction with ECS Cluster
+
+You can easily test any of these. Automatic component resolver will default
+to 'https://github.com/theonestack/hl-component-$name' location if component
+is not found in local sources.
+
+```
+cfcompile [componentname]
+```
+
+
+
+# How it works ?
 
 Highlander DSL produces CloudFormation templates in 4 phases
 
@@ -22,18 +138,18 @@ Highlander DSL produces CloudFormation templates in 4 phases
 - Producing resulting CloudFormation templates using configuration and templates generated in two previous phases.
 
 Each phase (aside from parameter wiring) above is executable as stand-alone through CLI, making development of Highlander templates easier by enabling
-debugging of produced configuration and cfndsl templates. 
+debugging of produced configuration and cfndsl templates.
 
 
 ## Highlander components
 
-Highlander component is located on local file system or S3 location with following 
+Highlander component is located on local file system or S3 location with following
 files defining them
 
 - Highlander DSL file (`$componentname.highlander.rb`)
 - *(Optional)* Configuration files (`*.config.yaml`)
 - *(Optional)* CfnDSL file (`componentname.cfnds.rb`)
-- *(Optional)* Mappings YAML files `*.mappings.yaml` - 
+- *(Optional)* Mappings YAML files `*.mappings.yaml` -
 this file defines map used within component itself
 - *(Optional)* Mappings extension file `componentname.mappings.rb` - see more under Mappings section
 - *(Optional)* Ruby extensions consumed by cfndsl templates - placed in `ext/cfndsl/*.rb` - see more under
@@ -75,7 +191,7 @@ cfhighlander commands:
 ### Working directory
 
 All templates and configuration generated are placed in `$WORKDIR/out` directory. Optionally, you can alter working directory
-via `CFHIGHLANDER_WORKDIR` environment variable. 
+via `CFHIGHLANDER_WORKDIR` environment variable.
 
 ### Commands
 
@@ -112,7 +228,7 @@ pip install requests -t lib
 Proceed (y/n)?
 ```
 
-In order to avoid user prompt pass `-q` or `--quiet` switch to CLI for commands that require Lambda packaging 
+In order to avoid user prompt pass `-q` or `--quiet` switch to CLI for commands that require Lambda packaging
 (`dslcompile`, `cfcompile`, `cfpublish`)
 
 
@@ -172,7 +288,7 @@ compiled cloudformation templates). Same CLI / DSL options apply as for *cfpubli
 There are 4 levels of component configuration
 
 - Component local config file `component.config.yaml` (lowest priority)
-- Outer component configuration file, under `components` key, like 
+- Outer component configuration file, under `components` key, like
 
 
 ```yaml
@@ -223,7 +339,7 @@ Configuration done this way will override any outer component config coming from
   key, it may alter configuration of other components. Globally exported configuration is defined under `global`, while
   component-oriented configuration is exported under `component` key. E.g. following configuration will export global
   configuration defining name of ecs cluster, and targeted to vpc component configuration, defining subnets
-  
+
 ```yaml
 ecs_cluster_name: ApplicationCluster
 
@@ -232,11 +348,11 @@ subnets:
     name: ECSCluster
     type: private
     allocation: 20
-    
+
 config_export:  
   global:
     - ecs_cluster_name
-    
+
   component:
     vpc:
       - subnets
@@ -258,7 +374,7 @@ Component name: 'ecs_cluster', template: 'ecs_cluster@latest', export_config: {'
 [CloudFormation Mappings](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html)
 section matches a key to a corresponding set of named values. Highlander allows you to define this mappings in two ways
 
-1. By using static maps defined through YAML files. Place `*.mappings.yaml` file alongside with highlander 
+1. By using static maps defined through YAML files. Place `*.mappings.yaml` file alongside with highlander
 template to define mappings this way. Mappings defined in a static way are automatically rendered withing CloudFormation
 template E.g.
 
@@ -275,7 +391,7 @@ EnvironmentType:
 2. By defining mappings dynamically through Ruby code. Alongside with mappings, you can define default map name, and default
 map key to be used when looking up value within this map. This mappings are usually rendered in outer component when inner
 components pulls mapping value as parameter via `MappingParam` statement. Optionally, this mappings can be rendered within
-component that defines them using `DynamicMappings` DSL statement. 
+component that defines them using `DynamicMappings` DSL statement.
 
 ## Extensions
 
@@ -283,7 +399,7 @@ component that defines them using `DynamicMappings` DSL statement.
 
 In order to make template more DRY, template developer may reuse ruby functions. It is possible to place
 such functions in separate files. Any ruby files placed within `ext/cfndsl` directory will get automatically
-included via Ruby `require` function in compiled Cfndsl template. 
+included via Ruby `require` function in compiled Cfndsl template.
 
 ## Component DSL
 
@@ -293,13 +409,13 @@ Inner components or subcomponents are defined via `Component` DSL statement
 
 ```ruby
 CfhighlanderTemplate do
-  
+
   # Example1 : Include component by template name only
-  Component 'vpc' 
-  
+  Component 'vpc'
+
   # Example2 : Include component by template name, version and give it a name
   Component template: 'ecs@master.snapshot'
-  
+
 end
 
 ```
@@ -313,16 +429,16 @@ value for feature toggle can be supplied using `enabled:` named parameter
 
 # Include vpc and 2 ecs clusters with feature flags
 CfhighlanderTemplate do
-  
+
   # vpc component
-  Component 'vpc' 
-  
+  Component 'vpc'
+
   # Ecs Cluster 1 has feature toggle, enabled by default
   Component name: 'ecs1', template: 'ecs', conditional: true
-  
+
   # Ecs Cluster 2 has feature toggle, and is explicitly disabled by default
   Component name: 'ec2', template: 'ecs', conditional: true, enabled: false
-   
+
 end
 
 ```
@@ -331,8 +447,8 @@ end
 
 ### Parameters
 
-Parameters block is used to define CloudFormation template parameters, and metadata on how they 
-are wired with outer or sibling components. 
+Parameters block is used to define CloudFormation template parameters, and metadata on how they
+are wired with outer or sibling components.
 
 ```ruby
 CfhighlanderTemplate do
@@ -349,18 +465,18 @@ Parameter block supports following parameters
 #### ComponentParam
 
 `ComponentParam` - Component parameter exposes parameter to be wired from outer component. Cfhighlander's
-autowiring mechanism will try and find any stack outputs from other components defined by outer components with name 
+autowiring mechanism will try and find any stack outputs from other components defined by outer components with name
 matching. If there is no explicit value provided, or autowired from outputs, parameter will be propagated to outer component.
 
-Propagated parameter will be prefixed with component name **if it is not defined as global parameter**. Otherwise, 
-parameter name is kept in full. 
+Propagated parameter will be prefixed with component name **if it is not defined as global parameter**. Otherwise,
+parameter name is kept in full.
 
-Example below demonstrates 3 different ways of providing parameter values from outer to inner component. 
+Example below demonstrates 3 different ways of providing parameter values from outer to inner component.
 
 - Provide value explicitly
 - Provide value explicitly as output of another component     
 - Autowire value from output of another component with the same name
-- Propagate parameter to outer component 
+- Propagate parameter to outer component
 
 ```ruby
 
@@ -388,7 +504,7 @@ CfhighlanderTemplate do
 end
 
 
-# -- contents of cfndsl 
+# -- contents of cfndsl
 CloudFormation do
 
     Condition 'AlwaysFalse', FnEquals('true','false')
@@ -427,7 +543,7 @@ CloudFormation do
       Default ''
       NoEcho false
     end
-    
+
     Parameter('BucketName5') do
       Type 'String'
       Default ''
@@ -437,24 +553,24 @@ CloudFormation do
    CloudFormation_Stack('s3') do
        TemplateURL './s3.compiled.yaml'
        Parameters ({
-       
+
           # Paramater that was auto-wired
            'BucketName' => {"Fn::GetAtt":["nameproducer","Outputs.BucketName"]},
-       
+
           # Parameter that was explicitly wired as output param from another component
            'BucketName2' => {"Fn::GetAtt":["nameproducer","Outputs.BucketName"]},
-       
+
           # Paramater that was explicitly provided
            'BucketName3' => 'mybucket.example.cfhighlander.org',
-       
+
           # Reference to parameter that was propagated. isGlobal: false when defining
-          # parameter, so parameter name is prefixed with component name 
+          # parameter, so parameter name is prefixed with component name
            'BucketName4' => {"Ref":"s3BucketName4"},
-          
+
           # Reference to parameter that was propagated. isGlobal: true when defining
           # parameter, so parameter name is not prefixed, but rather propagated as-is
           'BucketName5' => {"Ref":"BucketName5"},
-       
+
        })
    end
 end
@@ -467,9 +583,9 @@ end
 `MappingParam` - Mapping parameters value is passed as CloudFormation mapping lookup from outer component.
 This DSL statements takes a full body, as Mapping name, Map key, and value key need to be specified. `key`,
  `attribute` and `map` methods are used to specify these properties. Mapping parameters involve ruby code execution
- 
- 
- 
+
+
+
  ```ruby
 # Inner component
 CfhighlanderTemplate do
@@ -477,7 +593,7 @@ CfhighlanderTemplate do
   Parameters do
     MappingParam 'BucketName' do
       map 'AccountId'
-      attribute 'DnsDomain' 
+      attribute 'DnsDomain'
     end
   end
 end
@@ -486,7 +602,7 @@ end
 
 ### DependsOn
 
-`DependsOn` - this will include any globally exported libraries from given 
+`DependsOn` - this will include any globally exported libraries from given
 template. E.g.
 
  ```ruby
@@ -495,8 +611,8 @@ CfhighlanderTemplate do
   DependsOn 'vpc@1.0.3'
 end
  ```
- 
-Will include any cfndsl libraries present and exported in vpc template 
+
+Will include any cfndsl libraries present and exported in vpc template
 so extension methods can be consumed within cfndsl template.
 
 ### LambdaFunctions
@@ -527,19 +643,19 @@ CfhighlanderTemplate do
 
       # pulls directly from master branch of https://github.com/theonestack/hl-component-vpc
       Component name: 'vpc0', template: 'vpc'
-    
+
       # specify branch github.com: or github: work. You specify branch with hash
       Component name: 'vpc1', template: 'github:theonestack/hl-component-vpc#master'
-    
+
       # you can use git over ssh
       # Component name: 'vpc2', template: 'git:git@github.com:theonestack/hl-component-vpc.git'
-    
+
       # use git over https
       Component name: 'vpc3', template: 'git:https://github.com/theonestack/hl-component-sns.git'
-    
+
       # specify .snapshot to always clone fresh copy
       Component name: 'vpc4', template: 'git:https://github.com/theonestack/hl-component-sns.git#master.snapshot'
-    
+
       # by default, if not found locally, highlander will search for https://github.com/theonestack/component-$componentname
       # in v${version} branch (or tag for that matter)
       Component name: 'vpc5', template: 'vpc@1.0.4'
@@ -558,6 +674,6 @@ $ cfhighlander cfcompile [component] [-v distributedversion]
 
 ## Global Extensions
 
-Any extensions placed within `cfndsl_ext` folder will be 
-available in cfndsl templates of all components. Any extensions placed within `hl_ext` folder are 
-available in cfhighlander templates of all components. 
+Any extensions placed within `cfndsl_ext` folder will be
+available in cfndsl templates of all components. Any extensions placed within `hl_ext` folder are
+available in cfhighlander templates of all components.
