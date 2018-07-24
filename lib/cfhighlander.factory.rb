@@ -27,7 +27,7 @@ module Cfhighlander
         raise StandardError, "highlander template #{template_name}@#{template_version} not located" +
             " in sources #{@component_sources}" if template_meta.nil?
 
-        component_name = template_name if component_name.nil?
+        component_name = template_meta.template_name if component_name.nil?
         return buildComponentFromLocation(template_meta, component_name)
 
       end

@@ -1,6 +1,6 @@
 require_relative './cfhighlander.compiler'
 require 'aws-sdk-s3'
-
+require 'uri'
 module Cfhighlander
 
   module Publisher
@@ -16,6 +16,9 @@ module Cfhighlander
         bucket = @component.highlander_dsl.distribution_bucket
         prefix = @component.highlander_dsl.distribution_prefix
         version = @component.highlander_dsl.version
+
+        s3_create_bucket_if_not_exists(bucket)
+
         s3 = Aws::S3::Client.new({ region: s3_bucket_region(bucket) })
 
         existing_objects = s3.list_objects_v2({bucket: bucket, prefix: "#{prefix}/#{@component.name}/#{version}"})
@@ -37,11 +40,22 @@ module Cfhighlander
 
       end
 
-      def publishFiles(file_list)
+      def getLaunchStackUrl
+        template_url = "https://#{@component.highlander_dsl.distribution_bucket}.s3.amazonaws.com/"
+        template_url += @component.highlander_dsl.distribution_prefix + "/"
+        template_url += @component.highlander_dsl.version
+        region = s3_bucket_region(@component.highlander_dsl.distribution_bucket)
+        template_url += "/#{@component.name}.compiled.yaml"
+        return "https://console.aws.amazon.com/cloudformation/home?region=#{region}#/stacks/create/review?filter=active&templateURL=" +
+            "#{URI::encode(template_url)}&stackName=#{@component.name}"
+      end
 
+      def publishFiles(file_list)
         bucket = @component.highlander_dsl.distribution_bucket
         prefix = @component.highlander_dsl.distribution_prefix
         version = @component.highlander_dsl.version
+
+        s3_create_bucket_if_not_exists(bucket)
         s3 = Aws::S3::Client.new({ region: s3_bucket_region(bucket) })
 
         s3.list_objects_v2(bucket: bucket, prefix: "#{prefix}/#{version}").contents.each do |s3obj|
