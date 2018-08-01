@@ -84,7 +84,7 @@ class HighlanderCli < Thor
 
     component = build_component(options, component_name)
 
-    if component.distribution_bucket.nil? or component.distribution_prefix.nil?
+    if component.highlander_dsl.distribution_bucket.nil? or component.highlander_dsl.distribution_prefix.nil?
       component.distribution_bucket="#{aws_account_id()}.#{aws_current_region()}.cfhighlander.templates" if component.distribution_bucket.nil?
       component.distribution_prefix="published-templates/#{component.name}" if component.distribution_prefix.nil?
       puts "INFO: Reloading component, as auto-generated distribution settings  are being applied..."
