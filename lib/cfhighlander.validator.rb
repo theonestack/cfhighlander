@@ -1,6 +1,7 @@
 require 'aws-sdk-cloudformation'
 require 'aws-sdk-s3'
 require 'digest/md5'
+require_relative '../hl_ext/aws_helper'
 
 module Cfhighlander
 
@@ -46,6 +47,10 @@ module Cfhighlander
       def validate_s3(path)
         template = File.read path
         bucket = @component.highlander_dsl.distribution_bucket
+        if bucket.nil?
+          bucket = "#{aws_account_id()}.#{aws_current_region()}.cfhighlander.templates"
+          s3_create_bucket_if_not_exists(bucket)
+        end
         prefix = @component.highlander_dsl.distribution_prefix
         md5 = Digest::MD5.hexdigest template
         s3_key = "#{prefix}/highlander/validate/#{md5}"
