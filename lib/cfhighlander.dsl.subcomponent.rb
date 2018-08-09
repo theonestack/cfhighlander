@@ -128,6 +128,13 @@ module Cfhighlander
       end
 
       def parameter(name:, value:)
+        existing_params = @component_loaded.highlander_dsl.parameters.param_list
+        param_exists = existing_params.find { |p| p.name == name}
+        if (not param_exists)
+          @component_loaded.highlander_dsl.Parameters do
+            ComponentParam name, '', type: 'String'
+          end
+        end
         @param_values[name] = value
       end
 
