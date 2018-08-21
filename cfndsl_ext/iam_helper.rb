@@ -1,10 +1,17 @@
-def service_role_assume_policy(service)
-  unless service.end_with? '.amazonaws.com'
-    service = "#{service}.amazonaws.com"
+def service_role_assume_policy(services)
+
+  services = (services.kind_of?(Array) ? services : [services])
+  statement = []
+
+  services.each do |service|
+    unless service.end_with? '.amazonaws.com'
+      service = "#{service}.amazonaws.com"
+    end
+    statement << { Effect: 'Allow', Principal: { Service: "#{service}" }, Action: 'sts:AssumeRole' }
   end
   return {
       Version: '2012-10-17',
-      Statement: [{ Effect: 'Allow', Principal: { Service: "#{service}" }, Action: 'sts:AssumeRole' }]
+      Statement: statement
   }
 end
 
