@@ -125,6 +125,21 @@ ssm:
     - ssm:UpdateInstanceAssociationStatus
     - ssm:UpdateInstanceInformation
 
+ssm-path:
+  action:
+    - ssm:DescribeAssociation
+    - ssm:GetDeployablePatchSnapshotForInstance
+    - ssm:GetDocument
+    - ssm:GetParametersByPath
+    - ssm:GetParameters
+    - ssm:DescribeParameters
+    - ssm:ListAssociations
+    - ssm:ListInstanceAssociations
+    - ssm:PutInventory
+    - ssm:UpdateAssociationStatus
+    - ssm:UpdateInstanceAssociationStatus
+    - ssm:UpdateInstanceInformation
+
 ec2messages:
   action:
     - ec2messages:AcknowledgeMessage
