@@ -35,15 +35,34 @@ module Cfhighlander
         param.provided_value = "#{component}.#{name}"
       end
 
-      def ComponentParam(name, defaultValue = '', isGlobal: false, noEcho: false, type: 'String', allowedValues: nil)
-        param = Parameter.new(name, type, defaultValue, noEcho, isGlobal, allowedValues)
+      def ComponentParam(name, defaultValue = '', isGlobal: false, noEcho: false, type: 'String', allowedValues: nil, allowedPattern: nil,
+                          maxLength: nil, maxValue: nil, minLength: nil, minValue: nil, description: nil, constraintDescription: nil)
+        param = Parameter.new(
+          name: name,
+          type: type,
+          defaultValue: defaultValue,
+          noEcho: noEcho,
+          isGlobal: isGlobal,
+          allowedValues: allowedValues,
+          allowedPattern: allowedPattern,
+          maxLength: maxLength,
+          maxValue: maxValue,
+          minLength: minLength,
+          minValue: minValue,
+          description: description,
+          constraintDescription: constraintDescription
+        )
         param.config = @config
         addParam param
         return param
       end
 
       def MappingParam(name, defaultValue = '', &block)
-        param = MappingParam.new(name, 'String', defaultValue)
+        param = MappingParam.new(
+          name: name,
+          type: 'String',
+          defaultValue: defaultValue
+        )
         param.config = @config
         param.instance_eval(&block)
         addParam param
@@ -60,16 +79,30 @@ module Cfhighlander
           :no_echo,
           :is_global,
           :provided_value,
-          :allowed_values
+          :allowed_values,
+          :allowed_pattern,
+          :max_length,
+          :max_value,
+          :min_length,
+          :min_value,
+          :description,
+          :constraint_description
 
-      def initialize(name, type, defaultValue, noEcho = false, isGlobal = false, allowed_values = nil)
-        @no_echo = noEcho
-        @name = name
-        @type = type
-        @default_value = defaultValue
-        @is_global = isGlobal
-        @allowed_values = allowed_values
-        @provided_value = nil
+      def initialize(params = {})
+        @no_echo = params.fetch(:noEcho, false)
+        @name = params.fetch(:name)
+        @type = params.fetch(:type)
+        @default_value = params.fetch(:defaultValue)
+        @is_global = params.fetch(:isGlobal, false)
+        @allowed_values = params.fetch(:allowedValues, nil)
+        @provided_value = params.fetch(:providedValue, nil)
+        @allowed_pattern = params.fetch(:allowedPattern, nil)
+        @max_length = params.fetch(:maxLength, nil)
+        @max_value = params.fetch(:maxValue, nil)
+        @min_length = params.fetch(:minLength, nil)
+        @min_value = params.fetch(:minValue, nil)
+        @description = params.fetch(:description, nil)
+        @constraint_description = params.fetch(:constraintDescription, nil)
       end
 
     end

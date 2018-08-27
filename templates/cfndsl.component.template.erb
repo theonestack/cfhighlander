@@ -35,8 +35,33 @@ CloudFormation do
     Parameter('<%= @param.name %>') do
       Type '<%= @param.type %>'
       Default '<%= @param.default_value %>'
-      <% unless @param.no_echo.nil? %>NoEcho <%= @param.no_echo.to_s %> <% end %>
-      <% unless @param.allowed_values.nil? %>AllowedValues <%= @param.allowed_values.to_s %> <% end %>
+<%- unless @param.no_echo.nil? -%>
+      NoEcho <%= @param.no_echo %>
+<%- end -%>
+<%- unless @param.allowed_values.nil? -%>
+      AllowedValues <%= @param.allowed_values %>
+<%- end -%>
+<%- unless @param.allowed_pattern.nil? -%>
+      AllowedPattern <%= @param.allowed_pattern %>
+<%- end -%>
+<%- unless @param.max_length.nil? -%>
+      MaxLength <%= @param.max_length %>
+<%- end -%>
+<%- unless @param.max_value.nil? -%>
+      MaxValue <%= @param.max_value %>
+<%- end -%>
+<%- unless @param.min_length.nil? -%>
+      MinLength <%= @param.min_length %>
+<%- end -%>
+<%- unless @param.min_value.nil? -%>
+      MinValue <%= @param.min_value %>
+<%- end -%>
+<%- unless @param.description.nil? -%>
+      Description '<%= @param.description %>'
+<%- end -%>
+<%- unless @param.constraint_description.nil? -%>
+      ConstraintDescription '<%= @param.constraint_description %>'
+<%- end -%>
     end
 <% end %>
 
