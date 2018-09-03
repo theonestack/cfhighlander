@@ -127,7 +127,6 @@ module Cfhighlander
         @config['template_name'] = @template.template_name
         @config['template_version'] = @template.template_version
 
-
         Dir[candidate_mappings_path].each do |mapping_file|
           mappings = YAML.load(File.read(mapping_file))
           @component_files << mapping_file
