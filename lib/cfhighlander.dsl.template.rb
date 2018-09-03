@@ -499,7 +499,8 @@ def CfhighlanderTemplate(&block)
       if config.key? 'components'
         if config['components'].key? name
           if config['components'][name].key? 'config'
-            config = config['components'][name]['config']
+            # old legacy format takes priority, but these can be mixed
+            config.extend config['components'][name]['config']
           end
         end
       end
