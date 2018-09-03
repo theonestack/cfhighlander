@@ -443,7 +443,27 @@ end
 
 ```
 
+**Convert config value to parameter** - In case of inner component having configuration value
+you wish to expose as runtime parameter, it is possible to do so with limitation that configuration
+value is only used in *resource declarations*, as property value. If configuration value is being used
+to control the dsl flow, taking part in any control structure statements, and such gets evaluated at
+**compile** time, there is no sense of making CloudFormation stack parameter out of it.
 
+Below example demonstrate use of `ConfigParameter` statement on simple S3 Bucket component -
+it assumes that `s3bucket` template exists with `bucketName` as configuration value for it.
+
+
+```ruby
+CfhighlanderTemplate do
+
+    Component template: 's3bucket', name: 'parameterizedBucket' do
+        ConfigParameter config_key: 'bucketName', parameter_name: '', type: 'String'
+    end
+
+end
+
+
+```
 
 ### Parameters
 
