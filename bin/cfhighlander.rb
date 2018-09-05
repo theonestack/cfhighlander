@@ -124,6 +124,7 @@ class HighlanderCli < Thor
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
 
     puts "\n\nUse following url to launch CloudFormation stack\n\n#{publisher.getLaunchStackUrl}\n\n"
+    puts "\n\nUse following template url to update the stack\n\n#{publisher.getTemplateUrl}\n\n"
 
   end
 

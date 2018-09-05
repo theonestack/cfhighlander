@@ -9,7 +9,7 @@
 /test/tmp/
 /test/version_tmp/
 /tmp/
-
+spec/data/flatter/src/out
 # Used by dotenv library to load environment variables.
 # .env
 test/
@@ -51,3 +51,4 @@ build-iPhoneSimulator/
 out
 gem/*.gem
 install.sh
+test.rb

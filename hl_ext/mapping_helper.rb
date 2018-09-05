@@ -5,11 +5,11 @@ def mappings_provider(provider_name, is_legacy = false)
   return nil if provider_name.nil?
   provider = nil
   module_name = is_legacy ? 'Highlander': 'Cfhighlander'
-  providers = Object.const_get(module_name).const_get('MapProviders')
   begin
+    providers = Object.const_get(module_name).const_get('MapProviders')
     providers.const_get(provider_name)
   rescue NameError => e
-    if e.to_s.include? "uninitialized constant #{module_name}::MapProviders::"
+    if e.to_s.include? "uninitialized constant"
       return mappings_provider(provider_name, true) unless is_legacy
       return nil
     end

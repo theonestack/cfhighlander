@@ -7,7 +7,6 @@ module Cfhighlander
 
   module Cloudformation
 
-
     class Validator
 
       def initialize(component)

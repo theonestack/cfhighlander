@@ -15,8 +15,9 @@ module Cfhighlander
         default_locations = [
             LOCAL_CFHIGHLANDER_CACHE_LOCATION,
             File.expand_path('components'),
-            File.expand_path('.')
+            File.expand_path('.'),
         ]
+        default_locations << ENV['CFHIGHLANDER_WORKDIR'] if ENV.key? 'CFHIGHLANDER_WORKDIR'
         default_locations.each do |predefined_path|
           component_sources.unshift(predefined_path)
         end

@@ -35,6 +35,10 @@ module Cfhighlander
         return { 'Fn::Split' => [delimiter, source] }
       end
 
+      def FnJoin(glue, pieces)
+        return { 'Fn::Join' => [glue, pieces]}
+      end
+
       def FnSelect(index, list)
         return { 'Fn::Select' => [index, list] }
       end

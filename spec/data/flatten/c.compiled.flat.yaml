@@ -1,0 +1,67 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  c1OutParam:
+    Value:
+      Ref: Bucket
+  c1bc1OutParam:
+    Value:
+      Ref: c1bBucket
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+  c1bBucket:
+    Type: AWS::S3::Bucket
+  c1NamedBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::FindInMap:
+        - bucketnames
+        - default
+        - name
+  c1bc1NamedBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::FindInMap:
+        - c1bbucketnames
+        - default
+        - name
+  c2Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Join:
+        - ''
+        - - Fn::If:
+            - UseC1
+            - Ref: Bucket
+            - Ref: c1bBucket
+          - "-c2"
+Parameters:
+  c1abubbleParam:
+    Type: String
+    Default: ''
+    NoEcho: false
+  c1bbubbleParam:
+    Type: String
+    Default: ''
+    NoEcho: false
+  UseC1:
+    Type: String
+    Default: ''
+    NoEcho: false
+Conditions:
+  UseC1:
+    Fn::Equals:
+    - Ref: UseC1
+    - "true"
+Mappings:
+  bucketnames:
+    default:
+      name: mybucketname
+  c1bbucketnames:
+    default:
+      name: mybucketname
+Description: c@latest - vlatest

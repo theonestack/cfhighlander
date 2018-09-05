@@ -6,6 +6,9 @@ module Cfhighlander
 
     class Component
 
+      Inline = 'inline'
+      Substack = 'substack'
+
       attr_accessor :component_dir,
           :config,
           :highlander_dsl_path,
@@ -26,12 +29,12 @@ module Cfhighlander
           :factory,
           :extended_component,
           :is_parent_component
-
-      attr_reader :cfn_model,
-          :outputs,
+      attr_reader :outputs,
           :factory,
           :extended_component,
-          :potential_subcomponent_overrides
+          :potential_subcomponent_overrides,
+          :cfn_model,
+          :cfn_model_raw
 
 
       def initialize(template_meta, component_name, factory)
@@ -90,7 +93,7 @@ module Cfhighlander
       def loadDepandantExt()
         @highlander_dsl.dependson_components.each do |requirement|
           requirement.component_loaded.cfndsl_ext_files.each do |file|
-            cfndsl_ext_files << file
+            @cfndsl_ext_files << file
           end
         end
       end
@@ -230,12 +233,17 @@ module Cfhighlander
       end
 
       # evaluates cfndsl with current config
+      def set_cfndsl_model(value)
+        @cfn_model = value.as_json
+        @cfn_model_raw = JSON.parse(@cfn_model.to_json)
+      end
       def eval_cfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
         # there is no need for processing lambda source code during cloudformation evaluation,
         # this version never gets published
         compiler.process_lambdas = false
         @cfn_model = compiler.evaluateCloudFormation().as_json
+        @cfn_model_raw = JSON.parse(@cfn_model.to_json)
         @outputs = (
         if @cfn_model.key? 'Outputs'
         then

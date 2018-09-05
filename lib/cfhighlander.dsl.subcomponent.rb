@@ -28,13 +28,13 @@ module Cfhighlander
           :component_config_override,
           :export_config
 
-
       attr_reader :cfn_name,
           :conditional,
           :parent,
           :name,
           :template,
-          :template_version
+          :template_version,
+          :inlined
 
       def initialize(parent,
           name,
@@ -45,6 +45,7 @@ module Cfhighlander
           export_config = {},
           conditional = false,
           enabled = true,
+          inline = false,
           distribution_format = 'yaml')
 
         @parent = parent
@@ -52,6 +53,7 @@ module Cfhighlander
         @export_config = export_config
         @component_sources = component_sources
         @conditional = conditional
+        @inlined = inline
 
         template_name = template
         template_version = 'latest'
@@ -227,7 +229,12 @@ module Cfhighlander
         # TODO wire mapping parameters outside of component
         if param.class == Cfhighlander::Dsl::MappingParam
           puts " mapping parameter"
-          return self.resolveMappingParamValue(component, sub_component, param)
+          mapping_param_value = self.resolveMappingParamValue(component, sub_component, param)
+
+          # if mapping param is not resolved, e.g. mapping not provided
+          # parameters will bubble to parent component if not matched by outputs from
+          # other components
+          return mapping_param_value unless mapping_param_value.nil?
         end
 
         # rule #2: match output values from other components
@@ -286,11 +293,6 @@ module Cfhighlander
             value_name: param.mapAttribute,
             key_name: key_name
         )
-
-        if value.nil?
-          return "'#{param.default_value}'" unless param.default_value.empty?
-          return "''"
-        end
 
         return value
       end
