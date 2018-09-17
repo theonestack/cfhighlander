@@ -252,7 +252,7 @@ module Cfhighlander
           md5 = Digest::MD5.new
           md5.update lambda_config['code']
           hash = md5.hexdigest
-          cached_location = "#{ENV['HOME']}/cfhighlander/.cache/lambdas/#{hash}"
+          cached_location = "#{ENV['HOME']}/.cfhighlander/cache/lambdas/#{hash}"
           if cached_downloads.key? lambda_config['code']
             puts "INFO | Lambda #{name} | Using already downloaded archive #{lambda_config['code']}"
             FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
@@ -264,7 +264,7 @@ module Cfhighlander
               puts "INFO | Lambda #{name} |  Downloading source from #{lambda_config['code']}"
               download = open(lambda_config['code'])
               IO.copy_stream(download, "#{out_folder}/src.zip")
-              FileUtils.mkdir_p("#{ENV['HOME']}/cfhighlander/.cache/lambdas")
+              FileUtils.mkdir_p("#{ENV['HOME']}/.cfhighlander/cache/lambdas")
               FileUtils.copy("#{out_folder}/src.zip", cached_location)
               FileUtils.copy("#{out_folder}/src.zip", full_destination_path)
               puts "INFO | Lambda #{name} | source cached to #{cached_location}"
