@@ -39,7 +39,7 @@ has to be done manually - either if you build JSON/YAML templates by hand,
 or if using `Cfndsl`. With cfhighlander, this code is automatically generated for you
 
 ```ruby
-
+## place contents below in file name application.cfhighlander.rb
 CfhighlanderTemplate do
 
   # explicit configuration for vpc component
@@ -80,13 +80,13 @@ end
 ... compile the template with ... 
 
 ```shell
-cfcompile application.cfhighlander.rb
+cfcompile application
 ```
 
 ... and check how the subnets are being passed around ..
 
 ```shell
-$ cat out/yaml/app.compiled.yaml | grep  -A3 SubnetCompute0
+$ cat out/yaml/application.compiled.yaml | grep  -A3 SubnetCompute0
           SubnetCompute0:
             Fn::GetAtt:
             - vpc
