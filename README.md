@@ -685,7 +685,7 @@ end
 ```
 ## Render mode for components
 
-Rendering component resources in resulting cloudformation stack is available in 2 modes. This modes
+Rendering component resources in resulting cloudformation stack is available in 2 modes. These modes
 are controlled using `render` keyword of `Component` DSL statement
 
 `Substack` - creates additional substack for cfhighlander component and points to it using [CloudFormation

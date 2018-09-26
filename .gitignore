@@ -13,6 +13,8 @@ spec/data/flatter/src/out
 # Used by dotenv library to load environment variables.
 # .env
 test/
+spec/data/flatten/src/out
+spec/data/flatten/src/az.mappings.yaml
 ## Specific to RubyMotion:
 .dat*
 .repl_history
