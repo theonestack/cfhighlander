@@ -9,6 +9,7 @@
 
 require 'thor'
 require 'rubygems'
+require 'aws-sdk-core'
 require_relative '../lib/cfhighlander.compiler'
 require_relative '../lib/cfhighlander.factory'
 require_relative '../lib/cfhighlander.publisher'
@@ -179,5 +180,7 @@ end
 if ENV['HIGHLANDER_WORKDIR'].nil?
   ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
 end
+
+Aws.config[:retry_limit]= if ENV.key? 'CFHIGHLANDER_AWS_RETRY_LIMIT' then (ENV['CFHIGHLANDER_AWS_RETRY_LIMIT'].to_i) else 10 end
 
 HighlanderCli.start

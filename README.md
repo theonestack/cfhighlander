@@ -99,32 +99,48 @@ $ cat out/yaml/application.compiled.yaml | grep  -A3 SubnetCompute0
 
 
 
-# Library
+# Component library
 
-As part of [theonestack org](https://github.com/theonestack/), there is several publicly available components.
+As part of [theonestack org](https://github.com/theonestack/), there are many publicly available components.
 
 - [vpc](https://github.com/theonestack/hl-component-vpc) - Has separation of public
    and private subnets, configurable number of NAT Gateways (per AZ or single for all
-  subnets, handles all of the complex routing stuff)
+  subnets), lays out default subnets (private - compute, storage and cache, public), as well as their route tables
 
 - [ecs](https://github.com/theonestack/hl-component-ecs) - ECS Cluster deployed in VPC Compute Subnets
-- [bastion](https://github.com/theonestack/hl-component-bastion) - Deployed into VPC Public
+- [bastion](https://github.com/theonestack/hl-component-bastion) - Deployed into VPC Public subnets
   Subnets, with configuration for whitelisting IP addresses to access port 22
 - [ecs-service](https://github.com/theonestack/hl-component-ecs-service) - Deploy containerised apps running on ECS Clusters
-- [loadbalancer](https://github.com/theonestack/hl-component-loadbalancer)
+- [loadbalancer](https://github.com/theonestack/hl-component-loadbalancer) - ALB, ELB or NLB
 - [sns](https://github.com/theonestack/hl-component-sns) - SNS Topics, with implemented
 Lambda function to post Slack messages
 - [efs](https://github.com/theonestack/hl-component-efs) - Elastic File System, can be
 used in conjuction with ECS Cluster
+- [rds-mysql](https://github.com/theonestack/hl-component-rds-mysql) - RDS Component for MySQL engine
+- [rds-postgres](https://github.com/theonestack/hl-component-rds-postgres) - RDS Component for Postgres engine
+- [aurora-mysql](https://github.com/theonestack/hl-component-aurora-mysql) - Aurora component for MySQL engine
+- [aurora-postgres](https://github.com/theonestack/hl-component-aurora-postgres) - Aurora component for Postgres engine
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-memcache) - Aws Elasticache - Memcache engine 
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-redis) - Aws Elasticache - Redis engine 
+- [asg](https://github.com/theonestack/hl-component-asg) - AutoScalingGroup component
+- [cognito](https://github.com/theonestack/hl-component-cognito) - Cognito user pools, custom domain names and clients
 
 You can easily test any of these. Automatic component resolver will default
 to 'https://github.com/theonestack/hl-component-$name' location if component
 is not found in local sources.
 
-```
-cfcompile [componentname]
+From shell, command below will generate cloudformation for given component in `out` folder
+```shell
+cfcompile component_name
 ```
 
+Or from outer cfhighlander template, just pull component using `Component` DSL statement 
+
+```ruby
+CfhighlanderTemplate do
+  Component component_name
+end
+```
 
 
 # How it works ?
@@ -694,6 +710,16 @@ $ cfhighlander cfcompile [component] [-v distributedversion]
 
 ## Global Extensions
 
-Any extensions placed within `cfndsl_ext` folder will be
-available in cfndsl templates of all components. Any extensions placed within `hl_ext` folder are
+Any extensions placed within `cfndsl_ext` folder in core library code are
+available in cfndsl templates of all components. Any extensions placed within `hl_ext` in core library code are
 available in cfhighlander templates of all components.
+
+
+## Environment variables
+
+`CFHIGHLANDER_WORKDIR` - defaults to $PWD, determines location of 'out' folder where all of the
+generated files are placed
+
+`CFHIGHLANDER_AWS_RETRY_LIMIT` - defaults to 10. Number of retries for AWS SDK before giving up. 
+AWS SDK uses exponential backoff to make the API calls
+ 
