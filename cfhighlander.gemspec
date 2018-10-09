@@ -3,7 +3,7 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'cfhighlander'
-  s.version = '0.5.0'
+  s.version = '0.6.0'
   s.version = "#{s.version}.alpha.#{Time.now.getutc.to_i}" if ENV['TRAVIS'] and ENV['TRAVIS_BRANCH'] != 'master'
   s.summary = 'DSL on top of cfndsl. Manage libraries of cloudformation components'
   s.description = ''
@@ -26,5 +26,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'aws-sdk-cloudformation', '~> 1', '<2'
   s.add_runtime_dependency 'git', '~> 1.4', '<2'
   s.add_runtime_dependency 'netaddr', '~> 1.5', '>= 1.5.1'
+  s.add_runtime_dependency 'duplicate','~> 1.1'
   s.add_development_dependency 'rspec', '~> 3.7'
 end

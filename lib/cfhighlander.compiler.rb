@@ -11,6 +11,7 @@ require 'net/https'
 require 'highline/import'
 require 'zip'
 require_relative './util/zip.util'
+require_relative './util/cloudformation.util'
 
 module Cfhighlander
 
@@ -140,7 +141,22 @@ module Cfhighlander
 
 
         # grab cfndsl model
+
+        # 1st pass of cloudformation compiling - does the substacks normally
         model = evaluateCloudFormation
+        @component.set_cfndsl_model model
+
+        # compile sub-component templates
+        @sub_components.each do |sub_component|
+          sub_component.compileCloudFormation format
+          @cfn_template_paths += sub_component.cfn_template_paths
+          @lambda_src_paths += sub_component.lambda_src_paths
+        end
+
+        # 2nd pass will flatten any inlined components
+        model = Cfhighlander::Util::CloudFormation.flattenCloudformation(
+            component: @component
+        )
 
         # write resulting cloud formation template
         if format == 'json'
@@ -155,12 +171,8 @@ module Cfhighlander
         # `cfndsl #{@cfndsl_compiled_path} -p -f #{format} -o #{output_path} --disable-binding`
         puts "CloudFormation #{format.upcase} template for #{dsl.name} written to #{output_path}"
 
-        # compile sub-component templates
-        @sub_components.each do |sub_component|
-          sub_component.compileCloudFormation format
-          @cfn_template_paths += sub_component.cfn_template_paths
-          @lambda_src_paths += sub_component.lambda_src_paths
-        end
+
+
 
       end
 
@@ -246,41 +258,41 @@ module Cfhighlander
           FileUtils.remove full_destination_path if File.exist? full_destination_path
 
           # download file if code remote archive
-          puts "Packaging AWS Lambda function #{name}...\n"
-          puts "Destination archive is #{full_destination_path}"
+          puts "INFO | Lambda #{name} | Start package process"
+          puts "INFO | Lambda #{name} | Destination is #{full_destination_path}"
 
           md5 = Digest::MD5.new
           md5.update lambda_config['code']
           hash = md5.hexdigest
-          cached_location = "#{@workdir}/.cache/lambdas/#{hash}"
+          cached_location = "#{ENV['HOME']}/.cfhighlander/cache/lambdas/#{hash}"
           if cached_downloads.key? lambda_config['code']
-            puts "Using already downloaded archive #{lambda_config['code']}"
+            puts "INFO | Lambda #{name} | Using already downloaded archive #{lambda_config['code']}"
             FileUtils.copy(cached_downloads[lambda_config['code']], full_destination_path)
           elsif File.file? cached_location
-            puts "Using cached download - '#{cached_location}'"
+            puts "INFO | Lambda #{name} | Using cache from #{cached_location}"
             FileUtils.copy(cached_location, full_destination_path)
           else
             if lambda_config['code'].include? 'http'
-              puts "INFO Downloading lambda #{name} source from #{lambda_config['code']}"
+              puts "INFO | Lambda #{name} |  Downloading source from #{lambda_config['code']}"
               download = open(lambda_config['code'])
               IO.copy_stream(download, "#{out_folder}/src.zip")
-              FileUtils.mkdir_p('.cache/lambdas')
+              FileUtils.mkdir_p("#{ENV['HOME']}/.cfhighlander/cache/lambdas")
               FileUtils.copy("#{out_folder}/src.zip", cached_location)
               FileUtils.copy("#{out_folder}/src.zip", full_destination_path)
-              puts "INFO lambda #{name} source cached to #{cached_location}"
+              puts "INFO | Lambda #{name} | source cached to #{cached_location}"
               cached_downloads[lambda_config['code']] = cached_location
             elsif lambda_config['code'].include? 's3://'
               parts = lambda_config['code'].split('/')
               if parts.size < 4
-                STDERR.puts "ERROR: Lambda function source code from s3 should be in s3://bucket/path format"
+                STDERR.puts "ERROR | Lambda #{name} |  Lambda function source code from s3 should be in s3://bucket/path format"
                 exit -8
               end
               bucket = parts[2]
               key = parts.drop(3).join('/')
               s3 = Aws::S3::Client.new({ region: s3_bucket_region(bucket) })
-              puts "INFO Downloading lambda #{name} source from #{lambda_config['code']}"
+              puts "INFO | Lambda #{name} | Downloading source from #{lambda_config['code']}"
               s3.get_object({ bucket: bucket, key: key, response_target: cached_location })
-              puts "INFO lambda #{name} source cached to #{cached_location}"
+              puts "INFO | Lambda #{name} | source cached to #{cached_location}"
               FileUtils.copy(cached_location, full_destination_path)
               cached_downloads[lambda_config['code']] = cached_location
             else
@@ -297,7 +309,7 @@ module Cfhighlander
                 component_dir = nil unless parent_exists
               end
               if component_dir.nil?
-                STDERR.puts "ERROR: Could not find source code directory for lambda function #{name} in component #{@component.name}"
+                STDERR.puts "ERROR | Lambda #{name} | Could not find source code directory in component #{@component.name}"
                 exit -9
               end
 
@@ -316,7 +328,7 @@ module Cfhighlander
 
               # Lambda function source code allows pre-processing (e.g. install code dependencies)
               unless lambda_config['package_cmd'].nil?
-                puts "Following code will be executed to generate lambda function #{name}:\n\n#{lambda_config['package_cmd']}\n\n"
+                puts "INFO | Lambda #{name} | Following code will be executed to generate lambda function #{name}:\n\n#{lambda_config['package_cmd']}\n\n"
 
                 if @confirm_code_execution
                   exit -7 unless HighLine.agree('Proceed (y/n)?')
@@ -326,7 +338,7 @@ module Cfhighlander
                 puts 'Processing package command...'
                 package_result = system(package_cmd)
                 unless package_result
-                  puts "Error packaging lambda function, following command failed\n\n#{package_cmd}\n\n"
+                  puts "ERROR | Lambda #{name} | create package - following command failed\n\n#{package_cmd}\n\n"
                   exit -4
                 end
               end
@@ -342,7 +354,7 @@ module Cfhighlander
           end
           sha256 = Digest::SHA256.file full_destination_path
           sha256 = sha256.base64digest
-          puts "Created zip package #{full_destination_path} for lambda #{name} with digest #{sha256}"
+          puts "INFO | Lambda #{name} | Created zip package #{full_destination_path} with digest #{sha256}"
           @metadata['sha256'][name] = sha256
           @metadata['version'][name] = timestamp
         end

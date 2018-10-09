@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.org/theonestack/cfhighlander)
+[![Build Status](https://travis-ci.org/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.org/theonestack/cfhighlander) [![Join the chat at https://gitter.im/theonestack/cfhighlander](https://badges.gitter.im/theonestack/cfhighlander.svg)](https://gitter.im/theonestack/cfhighlander?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Intro
 
@@ -39,7 +39,7 @@ has to be done manually - either if you build JSON/YAML templates by hand,
 or if using `Cfndsl`. With cfhighlander, this code is automatically generated for you
 
 ```ruby
-
+## place contents below in file name application.cfhighlander.rb
 CfhighlanderTemplate do
 
   # explicit configuration for vpc component
@@ -80,13 +80,13 @@ end
 ... compile the template with ... 
 
 ```shell
-cfcompile application.cfhighlander.rb
+cfcompile application
 ```
 
 ... and check how the subnets are being passed around ..
 
 ```shell
-$ cat out/yaml/app.compiled.yaml | grep  -A3 SubnetCompute0
+$ cat out/yaml/application.compiled.yaml | grep  -A3 SubnetCompute0
           SubnetCompute0:
             Fn::GetAtt:
             - vpc
@@ -99,32 +99,48 @@ $ cat out/yaml/app.compiled.yaml | grep  -A3 SubnetCompute0
 
 
 
-# Library
+# Component library
 
-As part of [theonestack org](https://github.com/theonestack/), there is several publicly available components.
+As part of [theonestack org](https://github.com/theonestack/), there are many publicly available components.
 
 - [vpc](https://github.com/theonestack/hl-component-vpc) - Has separation of public
    and private subnets, configurable number of NAT Gateways (per AZ or single for all
-  subnets, handles all of the complex routing stuff)
+  subnets), lays out default subnets (private - compute, storage and cache, public), as well as their route tables
 
 - [ecs](https://github.com/theonestack/hl-component-ecs) - ECS Cluster deployed in VPC Compute Subnets
-- [bastion](https://github.com/theonestack/hl-component-bastion) - Deployed into VPC Public
+- [bastion](https://github.com/theonestack/hl-component-bastion) - Deployed into VPC Public subnets
   Subnets, with configuration for whitelisting IP addresses to access port 22
 - [ecs-service](https://github.com/theonestack/hl-component-ecs-service) - Deploy containerised apps running on ECS Clusters
-- [loadbalancer](https://github.com/theonestack/hl-component-loadbalancer)
+- [loadbalancer](https://github.com/theonestack/hl-component-loadbalancer) - ALB, ELB or NLB
 - [sns](https://github.com/theonestack/hl-component-sns) - SNS Topics, with implemented
 Lambda function to post Slack messages
 - [efs](https://github.com/theonestack/hl-component-efs) - Elastic File System, can be
 used in conjuction with ECS Cluster
+- [rds-mysql](https://github.com/theonestack/hl-component-rds-mysql) - RDS Component for MySQL engine
+- [rds-postgres](https://github.com/theonestack/hl-component-rds-postgres) - RDS Component for Postgres engine
+- [aurora-mysql](https://github.com/theonestack/hl-component-aurora-mysql) - Aurora component for MySQL engine
+- [aurora-postgres](https://github.com/theonestack/hl-component-aurora-postgres) - Aurora component for Postgres engine
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-memcache) - Aws Elasticache - Memcache engine 
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-redis) - Aws Elasticache - Redis engine 
+- [asg](https://github.com/theonestack/hl-component-asg) - AutoScalingGroup component
+- [cognito](https://github.com/theonestack/hl-component-cognito) - Cognito user pools, custom domain names and clients
 
 You can easily test any of these. Automatic component resolver will default
 to 'https://github.com/theonestack/hl-component-$name' location if component
 is not found in local sources.
 
-```
-cfcompile [componentname]
+From shell, command below will generate cloudformation for given component in `out` folder
+```shell
+cfcompile component_name
 ```
 
+Or from outer cfhighlander template, just pull component using `Component` DSL statement 
+
+```ruby
+CfhighlanderTemplate do
+  Component component_name
+end
+```
 
 
 # How it works ?
@@ -683,6 +699,46 @@ CfhighlanderTemplate do
 end
 
 ```
+## Render mode for components
+
+Rendering component resources in resulting cloudformation stack is available in 2 modes. These modes
+are controlled using `render` keyword of `Component` DSL statement
+
+`Substack` - creates additional substack for cfhighlander component and points to it using [CloudFormation
+Stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-stack.html) resource type
+This is also default render mode - if no render mode is specified `Substack` will be used
+
+`Inline` - places all defined resources from inner component in outer component cloudformation template. Resources,
+Outputs, Conditions, Parameters and Mappings are all inlined - please note that some of the template elements may be renamed in this
+process in order to assure unique names. 
+
+There are some limitations when using inline components - Inlined component parameters, having values as outputs from another component (inlined or not)
+can't be referenced in component conditions. However, conditions referencing mapping values or parameters passed as mapping values,
+are allowed.
+
+**`SIDE EFFECTS`** Side effect of moving from substack based to fully inlined stack may be revealing some of the implicit dependencies within an environment
+
+*Example:* Component A defines Hosted Zone, while component B defines Record Set for given hosted zone. Record set is defined
+by referencing Zone Name (rather than ZoneId), meaning there is no explicit dependency between the resources. When both components
+are rendered as substack, implicit dependency is created if there is at least one output from component A passed as parameter
+to component B. Rendering components inlined removes this implicitly defined dependency, as a consequence stack deletion or creation
+may be halted, as record set is being created/deleted before prior the record set. 
+
+**`WARNING`** Be aware of [resource, condition, parameter, output and mapping limits](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html) on a single template
+when rendering inner components inlined.
+
+**`EXAMPLE`** All of the VPC resources will be rendered in outer component template, while bastion
+will be referenced as substack in example below. 
+
+```ruby
+CfhighlanderTemplate do
+
+    Component template:'vpc@1.5.0', name: 'vpc', render: Inline
+    Component template:'bastion@1.2.0', name: 'bastion', render: Substack
+
+end
+```
+
 
 
 ## Rendering CloudFormation templates
@@ -694,6 +750,16 @@ $ cfhighlander cfcompile [component] [-v distributedversion]
 
 ## Global Extensions
 
-Any extensions placed within `cfndsl_ext` folder will be
-available in cfndsl templates of all components. Any extensions placed within `hl_ext` folder are
+Any extensions placed within `cfndsl_ext` folder in core library code are
+available in cfndsl templates of all components. Any extensions placed within `hl_ext` in core library code are
 available in cfhighlander templates of all components.
+
+
+## Environment variables
+
+`CFHIGHLANDER_WORKDIR` - defaults to $PWD, determines location of 'out' folder where all of the
+generated files are placed
+
+`CFHIGHLANDER_AWS_RETRY_LIMIT` - defaults to 10. Number of retries for AWS SDK before giving up. 
+AWS SDK uses exponential backoff to make the API calls
+ 

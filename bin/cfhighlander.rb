@@ -9,6 +9,7 @@
 
 require 'thor'
 require 'rubygems'
+require 'aws-sdk-core'
 require_relative '../lib/cfhighlander.compiler'
 require_relative '../lib/cfhighlander.factory'
 require_relative '../lib/cfhighlander.publisher'
@@ -124,6 +125,7 @@ class HighlanderCli < Thor
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
 
     puts "\n\nUse following url to launch CloudFormation stack\n\n#{publisher.getLaunchStackUrl}\n\n"
+    puts "\n\nUse following template url to update the stack\n\n#{publisher.getTemplateUrl}\n\n"
 
   end
 
@@ -179,5 +181,7 @@ end
 if ENV['HIGHLANDER_WORKDIR'].nil?
   ENV['HIGHLANDER_WORKDIR'] = Dir.pwd
 end
+
+Aws.config[:retry_limit]= if ENV.key? 'CFHIGHLANDER_AWS_RETRY_LIMIT' then (ENV['CFHIGHLANDER_AWS_RETRY_LIMIT'].to_i) else 10 end
 
 HighlanderCli.start
