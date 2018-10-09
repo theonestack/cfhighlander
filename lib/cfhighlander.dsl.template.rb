@@ -117,6 +117,7 @@ module Cfhighlander
           export_config: {},
           conditional: false,
           enabled: true,
+          render: Cfhighlander::Model::Component::Substack,
           &block)
         puts "INFO: Requested subcomponent #{name} with template #{template}"
         if ((not template_arg.nil?) and template.nil?)
@@ -137,7 +138,8 @@ module Cfhighlander
             config,
             export_config,
             conditional,
-            enabled
+            enabled,
+            render == Cfhighlander::Model::Component::Inline
         )
         # component.instance_eval(&block) unless block.nil?
         @subcomponents_exec[name] = block unless block.nil?
@@ -481,9 +483,6 @@ def CfhighlanderTemplate(&block)
   end
   unless @distribution_prefix.nil?
     instance.DistributionPrefix(@distribution_prefix)
-  end
-  unless @distribution_format.nil?
-    instance.Forma
   end
 
   # process convention over configuration componentname.config.yaml files

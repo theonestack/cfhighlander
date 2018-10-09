@@ -699,6 +699,46 @@ CfhighlanderTemplate do
 end
 
 ```
+## Render mode for components
+
+Rendering component resources in resulting cloudformation stack is available in 2 modes. These modes
+are controlled using `render` keyword of `Component` DSL statement
+
+`Substack` - creates additional substack for cfhighlander component and points to it using [CloudFormation
+Stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-stack.html) resource type
+This is also default render mode - if no render mode is specified `Substack` will be used
+
+`Inline` - places all defined resources from inner component in outer component cloudformation template. Resources,
+Outputs, Conditions, Parameters and Mappings are all inlined - please note that some of the template elements may be renamed in this
+process in order to assure unique names. 
+
+There are some limitations when using inline components - Inlined component parameters, having values as outputs from another component (inlined or not)
+can't be referenced in component conditions. However, conditions referencing mapping values or parameters passed as mapping values,
+are allowed.
+
+**`SIDE EFFECTS`** Side effect of moving from substack based to fully inlined stack may be revealing some of the implicit dependencies within an environment
+
+*Example:* Component A defines Hosted Zone, while component B defines Record Set for given hosted zone. Record set is defined
+by referencing Zone Name (rather than ZoneId), meaning there is no explicit dependency between the resources. When both components
+are rendered as substack, implicit dependency is created if there is at least one output from component A passed as parameter
+to component B. Rendering components inlined removes this implicitly defined dependency, as a consequence stack deletion or creation
+may be halted, as record set is being created/deleted before prior the record set. 
+
+**`WARNING`** Be aware of [resource, condition, parameter, output and mapping limits](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html) on a single template
+when rendering inner components inlined.
+
+**`EXAMPLE`** All of the VPC resources will be rendered in outer component template, while bastion
+will be referenced as substack in example below. 
+
+```ruby
+CfhighlanderTemplate do
+
+    Component template:'vpc@1.5.0', name: 'vpc', render: Inline
+    Component template:'bastion@1.2.0', name: 'bastion', render: Substack
+
+end
+```
+
 
 
 ## Rendering CloudFormation templates

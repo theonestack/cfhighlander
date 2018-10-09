@@ -11,6 +11,7 @@ require 'net/https'
 require 'highline/import'
 require 'zip'
 require_relative './util/zip.util'
+require_relative './util/cloudformation.util'
 
 module Cfhighlander
 
@@ -140,7 +141,22 @@ module Cfhighlander
 
 
         # grab cfndsl model
+
+        # 1st pass of cloudformation compiling - does the substacks normally
         model = evaluateCloudFormation
+        @component.set_cfndsl_model model
+
+        # compile sub-component templates
+        @sub_components.each do |sub_component|
+          sub_component.compileCloudFormation format
+          @cfn_template_paths += sub_component.cfn_template_paths
+          @lambda_src_paths += sub_component.lambda_src_paths
+        end
+
+        # 2nd pass will flatten any inlined components
+        model = Cfhighlander::Util::CloudFormation.flattenCloudformation(
+            component: @component
+        )
 
         # write resulting cloud formation template
         if format == 'json'
@@ -155,12 +171,8 @@ module Cfhighlander
         # `cfndsl #{@cfndsl_compiled_path} -p -f #{format} -o #{output_path} --disable-binding`
         puts "CloudFormation #{format.upcase} template for #{dsl.name} written to #{output_path}"
 
-        # compile sub-component templates
-        @sub_components.each do |sub_component|
-          sub_component.compileCloudFormation format
-          @cfn_template_paths += sub_component.cfn_template_paths
-          @lambda_src_paths += sub_component.lambda_src_paths
-        end
+
+
 
       end
 

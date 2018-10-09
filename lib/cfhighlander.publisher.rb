@@ -40,12 +40,17 @@ module Cfhighlander
 
       end
 
-      def getLaunchStackUrl
+      def getTemplateUrl
         template_url = "https://#{@component.highlander_dsl.distribution_bucket}.s3.amazonaws.com/"
         template_url += @component.highlander_dsl.distribution_prefix + "/"
         template_url += @component.highlander_dsl.version
-        region = s3_bucket_region(@component.highlander_dsl.distribution_bucket)
         template_url += "/#{@component.name}.compiled.yaml"
+        return template_url
+      end
+
+      def getLaunchStackUrl
+        template_url = getTemplateUrl
+        region = s3_bucket_region(@component.highlander_dsl.distribution_bucket)
         return "https://console.aws.amazon.com/cloudformation/home?region=#{region}#/stacks/create/review?filter=active&templateURL=" +
             "#{URI::encode(template_url)}&stackName=#{@component.name}"
       end
