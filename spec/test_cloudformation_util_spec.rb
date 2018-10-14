@@ -5,7 +5,7 @@ require 'pp'
 require 'octokit'
 require 'rspec'
 
-RSpec.describe Cfhighlander::Util::CloudformationUtil, "#flattenCloudformation" do
+RSpec.describe Cfhighlander::Util::CloudFormation, "#flattenCloudformation" do
 
   context "test cloudformation inllining" do
     it "flattens cloudformation" do
@@ -19,11 +19,10 @@ RSpec.describe Cfhighlander::Util::CloudformationUtil, "#flattenCloudformation" 
       component.eval_cfndsl
 
       compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
-      compiler.compileCloudFormation
+      model_flat = compiler.compileCloudFormation
 
-      model_flat = Cfhighlander::Util::CloudformationUtil.flattenCloudformation(component:component)
-      model_flat = JSON.parse(model_flat.to_json)
       model_flat_expected =  YAML.load(File.read("#{src_dir}/../c.compiled.flat.yaml"))
+      FileUtils.mkdir_p "#{File.dirname(__FILE__)}/../test"
       File.write "#{File.dirname(__FILE__)}/../test/c.flat.yaml", model_flat.to_yaml
 
       expect(model_flat).to eq(model_flat_expected)
