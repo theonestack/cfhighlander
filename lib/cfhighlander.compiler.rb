@@ -171,8 +171,7 @@ module Cfhighlander
         # `cfndsl #{@cfndsl_compiled_path} -p -f #{format} -o #{output_path} --disable-binding`
         puts "CloudFormation #{format.upcase} template for #{dsl.name} written to #{output_path}"
 
-
-
+        return JSON.parse(model.to_json)
 
       end
 

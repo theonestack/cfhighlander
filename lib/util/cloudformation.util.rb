@@ -94,6 +94,12 @@ module Cfhighlander
         inline_elements('Conditions', component, template)
         inline_elements('Mappings', component, template)
         inline_elements('Resources', component, template)
+
+        # outputs are renamed AFTER all of the other processing
+        # has been done, as outputs are referenced. Only
+        # outputs of inlined components are renamed
+        flatten_namespace('Outputs', component, template)
+        Debug.debug_dump_cfn(template, 'flat.outputs')
         inline_elements('Outputs', component, template)
       end
 
@@ -364,7 +370,7 @@ module Cfhighlander
       def self.rename_mapping(tree, search, replacement)
         tree.keys.each do |k|
           v = tree[k]
-          if k == 'Fn::FindInMap' and v[0] = search
+          if k == 'Fn::FindInMap' and v[0] == search
             tree[k] = [replacement, v[1], v[2]]
           end
 
@@ -440,9 +446,6 @@ module Cfhighlander
 
         flatten_namespace('Resources', component, template)
         Debug.debug_dump_cfn(template, 'flat.resources')
-
-        flatten_namespace('Outputs', component, template)
-        Debug.debug_dump_cfn(template, 'flat.outputs')
       end
 
     end
