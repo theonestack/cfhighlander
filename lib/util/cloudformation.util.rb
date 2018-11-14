@@ -44,7 +44,7 @@ module Cfhighlander
         model = component.cfn_model_raw
         template.subcomponents.each do |sub_component|
           next unless sub_component.inlined
-          model['Resources'].delete(sub_component.component_loaded.name)
+          model['Resources'].delete(sub_component.cfn_name)
         end
       end
 
