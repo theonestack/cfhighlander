@@ -54,3 +54,5 @@ out
 gem/*.gem
 install.sh
 test.rb
+
+.vscode/
