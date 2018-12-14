@@ -89,7 +89,8 @@ module Cfhighlander
         cfn_template = renderer.result(OpenStruct.new({
             'dsl' => dsl,
             'component_cfndsl' => component_cfndsl,
-            'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files)
+            'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files),
+            'distribution_format' => out_format
         }).instance_eval {binding})
 
         # write to output file
