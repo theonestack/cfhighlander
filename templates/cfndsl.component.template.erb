@@ -68,4 +68,11 @@ CloudFormation do
 <% for @condition in dsl.conditions %>    Condition('<%= @condition.name %>', <%= @condition.expression %>)
 <% end %>
     Description '<%= dsl.description %>'
+
+    Output('CfTemplateUrl') {
+        Value("<%=dsl.distribute_url%>/<%=dsl.name%>.compiled.<%=distribution_format%>")
+    }
+    Output('CfTemplateVersion') {
+        Value("<%=dsl.version%>")
+    }
 end
