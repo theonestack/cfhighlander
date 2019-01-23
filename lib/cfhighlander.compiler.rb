@@ -130,7 +130,7 @@ module Cfhighlander
         dsl = @component.highlander_dsl
 
         # create out dir if not there
-        @cfn_output_location = "#{@workdir}/out/#{format}"
+        @cfn_output_location = "#{@workdir}/out/#{format}" if @cfn_output_location.nil?
         output_dir = @cfn_output_location
         FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 

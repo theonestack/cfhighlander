@@ -15,6 +15,7 @@ require_relative '../lib/cfhighlander.compiler'
 require_relative '../lib/cfhighlander.factory'
 require_relative '../lib/cfhighlander.publisher'
 require_relative '../lib/cfhighlander.validator'
+require_relative '../lib/cfhighlander.tests'
 require_relative '../hl_ext/aws_helper'
 
 class HighlanderCli < Thor
@@ -163,10 +164,71 @@ class HighlanderCli < Thor
     publisher.publishComponent
   end
 
+  desc 'cftest component[@version]', 'Test Highlander component with test case config'
+  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
+      :desc => 'Version to compile by which subcomponents are referenced'
+  method_option :dstbucket, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 bucket'
+  method_option :dstprefix, :type => :string, :required => false, :default => nil,
+      :desc => 'Distribution S3 prefix'
+  method_option :format, :type => :string, :required => true, :default => 'yaml', :aliases => "-f",
+      :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
+  method_option :validate, :type => :boolean, :default => true,
+      :desc => 'Optionally validate template'
+  method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
+      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+
+  def cftest(component_name = nil, autogenerate_dist = false)
+
+    if component_name.nil?
+      candidates = Dir["*.tests.yaml"]
+      if candidates.size == 0
+        self.help('cftest')
+        exit -1
+      else
+        component_name = candidates[0].gsub('.tests.yaml','')
+      end
+    end
+
+    tests = CfHighlander::Tests.new(component_name)
+    test_cases = tests.test_cases
+
+    test_cases.each do |test|
+      component = build_component(options, component_name, test[:config])
+
+      if component.highlander_dsl.distribution_bucket.nil? or component.highlander_dsl.distribution_prefix.nil?
+        component.distribution_bucket="#{aws_account_id()}.#{aws_current_region()}.cfhighlander.templates" if component.distribution_bucket.nil?
+        component.distribution_prefix="published-templates/#{component.name}" if component.distribution_prefix.nil?
+        puts "INFO: Reloading component, as auto-generated distribution settings  are being applied..."
+        component.load
+      end if autogenerate_dist
+
+      # compile cloud formation
+      component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+      component_compiler.cfn_output_location = "#{ENV['CFHIGHLANDER_WORKDIR']}/out/tests/#{test[:name]}"
+      component_compiler.silent_mode = options[:quiet]
+      out_format = options[:format]
+      component_compiler.compileCloudFormation out_format
+      if options[:validate]
+        begin
+          component_validator = Cfhighlander::Cloudformation::Validator.new(component)
+          component_validator.validate(component_compiler.cfn_template_paths, out_format)
+        rescue Aws::CloudFormation::Errors::ValidationError => e
+          tests.failures(test[:name],'Validation',e.message)
+        end
+      end
+      component_compiler
+    end
+
+    tests.print_results
+    exit tests.exit_code
+
+  end
+
 end
 
 # build component from passed cli options
-def build_component(options, template_name)
+def build_component(options, template_name, config=nil)
 
   component_version = options[:version]
   distribution_bucket = options[:dstbucket]
@@ -176,6 +238,7 @@ def build_component(options, template_name)
   component_loader = Cfhighlander::Factory::ComponentFactory.new
   component = component_loader.loadComponentFromTemplate(template_name)
   component.version = component_version unless component_version.nil?
+  component.config = config unless config.nil?
   component.distribution_bucket = distribution_bucket unless distribution_bucket.nil?
   component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
   component.load
