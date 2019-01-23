@@ -204,11 +204,15 @@ class HighlanderCli < Thor
       end if autogenerate_dist
 
       # compile cloud formation
-      component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
-      component_compiler.cfn_output_location = "#{ENV['CFHIGHLANDER_WORKDIR']}/out/tests/#{test[:name]}"
-      component_compiler.silent_mode = options[:quiet]
-      out_format = options[:format]
-      component_compiler.compileCloudFormation out_format
+      begin
+        component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+        component_compiler.cfn_output_location = "#{ENV['CFHIGHLANDER_WORKDIR']}/out/tests/#{test[:name]}"
+        component_compiler.silent_mode = options[:quiet]
+        out_format = options[:format]
+        component_compiler.compileCloudFormation out_format
+      rescue => e
+        tests.failures(test[:name],'Compile',e.message)
+      end
       if options[:validate]
         begin
           component_validator = Cfhighlander::Cloudformation::Validator.new(component)
