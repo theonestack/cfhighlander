@@ -165,8 +165,10 @@ class HighlanderCli < Thor
   end
 
   desc 'cftest component[@version]', 'Test Highlander component with test case config'
-  method_option :version, :type => :string, :required => false, :default => nil, :aliases => '-v',
-      :desc => 'Version to compile by which subcomponents are referenced'
+  method_option :directory, :type => :string, :required => false, :default => 'tests', :aliases => "-d",
+      :desc => 'Tests directory'
+  method_option :tests, :type => :array, :required => false, :aliases => "-t",
+      :desc => 'Point to specific test files using the relative path'
   method_option :dstbucket, :type => :string, :required => false, :default => nil,
       :desc => 'Distribution S3 bucket'
   method_option :dstprefix, :type => :string, :required => false, :default => nil,
@@ -175,25 +177,26 @@ class HighlanderCli < Thor
       :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
   method_option :validate, :type => :boolean, :default => true,
       :desc => 'Optionally validate template'
-  method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
+  method_option :quiet, :type => :boolean, :default => true, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
   def cftest(component_name = nil, autogenerate_dist = false)
 
     if component_name.nil?
-      candidates = Dir["*.tests.yaml"]
+      candidates = Dir["*.cfhighlander.rb"]
       if candidates.size == 0
         self.help('cftest')
         exit -1
       else
-        component_name = candidates[0].gsub('.tests.yaml','')
+        component_name = candidates[0].gsub('.cfhighlander.rb','')
       end
     end
 
-    tests = CfHighlander::Tests.new(component_name)
-    test_cases = tests.test_cases
+    tests = CfHighlander::Tests.new(component_name,options)
+    tests.get_cases
 
-    test_cases.each do |test|
+    tests.cases.each do |test|
+      test_name = test[:metadata]['name']
       component = build_component(options, component_name, test[:config])
 
       if component.highlander_dsl.distribution_bucket.nil? or component.highlander_dsl.distribution_prefix.nil?
@@ -204,21 +207,24 @@ class HighlanderCli < Thor
       end if autogenerate_dist
 
       # compile cloud formation
+      component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+      component_compiler.cfn_output_location = "#{ENV['CFHIGHLANDER_WORKDIR']}/out/tests/#{test_name.gsub(' ','_')}"
+      component_compiler.silent_mode = options[:quiet]
+      out_format = options[:format]
+
       begin
-        component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
-        component_compiler.cfn_output_location = "#{ENV['CFHIGHLANDER_WORKDIR']}/out/tests/#{test[:name]}"
-        component_compiler.silent_mode = options[:quiet]
-        out_format = options[:format]
         component_compiler.compileCloudFormation out_format
       rescue => e
-        tests.failures(test[:name],'Compile',e.message)
+        tests.failures(test_name,'Compile',test[:file],e.message)
+        next
       end
+
       if options[:validate]
         begin
           component_validator = Cfhighlander::Cloudformation::Validator.new(component)
           component_validator.validate(component_compiler.cfn_template_paths, out_format)
         rescue Aws::CloudFormation::Errors::ValidationError => e
-          tests.failures(test[:name],'Validation',e.message)
+          tests.failures(test_name,'Validation',test[:file],e.message)
         end
       end
       component_compiler
