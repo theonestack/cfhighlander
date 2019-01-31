@@ -10,6 +10,7 @@
 require 'thor'
 require 'rubygems'
 require 'aws-sdk-core'
+require_relative '../lib/cfhighlander.version'
 require_relative '../lib/cfhighlander.compiler'
 require_relative '../lib/cfhighlander.factory'
 require_relative '../lib/cfhighlander.publisher'
@@ -19,6 +20,12 @@ require_relative '../hl_ext/aws_helper'
 class HighlanderCli < Thor
 
   package_name "cfhighlander"
+
+  map %w[--version -v] => :__print_version
+  desc "--version, -v", "print the version"
+  def __print_version
+    puts Cfhighlander::VERSION
+  end
 
   desc 'configcompile component[@version]', 'Compile Highlander components configuration'
 

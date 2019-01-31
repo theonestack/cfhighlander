@@ -1,9 +1,12 @@
-require 'rake'
+lib = File.expand_path("../lib", __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
+require 'rake'
+require "cfhighlander.version"
 
 Gem::Specification.new do |s|
   s.name = 'cfhighlander'
-  s.version = '0.7.0'
+  s.version = Cfhighlander::VERSION
   s.version = "#{s.version}.alpha.#{Time.now.getutc.to_i}" if ENV['TRAVIS'] and ENV['TRAVIS_BRANCH'] != 'master'
   s.summary = 'DSL on top of cfndsl. Manage libraries of cloudformation components'
   s.description = ''
