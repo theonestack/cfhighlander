@@ -179,8 +179,12 @@ class HighlanderCli < Thor
       :desc => 'Optionally validate template'
   method_option :quiet, :type => :boolean, :default => true, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+  method_option :report, :type => :string, :aliases => '-r', :enum => ['json','xml'],
+      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
 
   def cftest(component_name = nil, autogenerate_dist = false)
+
+    tests_start = Time.now
 
     if component_name.nil?
       candidates = Dir["*.cfhighlander.rb"]
@@ -193,11 +197,13 @@ class HighlanderCli < Thor
     end
 
     tests = CfHighlander::Tests.new(component_name,options)
+    tests.timestamp = Time.now.strftime('%Y-%m-%dT%H:%M:%S.%L%z')
     tests.get_cases
 
     tests.cases.each do |test|
       test_name = test[:metadata]['name']
       component = build_component(options, component_name, test[:config])
+      failure = false
 
       if component.highlander_dsl.distribution_bucket.nil? or component.highlander_dsl.distribution_prefix.nil?
         component.distribution_bucket="#{aws_account_id()}.#{aws_current_region()}.cfhighlander.templates" if component.distribution_bucket.nil?
@@ -212,24 +218,49 @@ class HighlanderCli < Thor
       component_compiler.silent_mode = options[:quiet]
       out_format = options[:format]
 
+      start = Time.now
       begin
         component_compiler.compileCloudFormation out_format
       rescue => e
-        tests.failures(test_name,'Compile',test[:file],e.message)
-        next
+        failure = {message: e.message, type: 'Cfhighlander::Compiler::ComponentCompiler'}
       end
+      finish = Time.now
+
+      tests.report << {
+        name: test_name,
+        test: test[:file],
+        type: 'compile',
+        failure: failure,
+        time: (finish - start).to_s
+      }
+      next if failure
 
       if options[:validate]
+        start = Time.now
         begin
           component_validator = Cfhighlander::Cloudformation::Validator.new(component)
           component_validator.validate(component_compiler.cfn_template_paths, out_format)
         rescue Aws::CloudFormation::Errors::ValidationError => e
-          tests.failures(test_name,'Validation',test[:file],e.message)
+          failure = {message: e.message, type: 'Cfhighlander::Cloudformation::Validator'}
         end
+        finish = Time.now
       end
+
+      tests.report << {
+        name: test_name,
+        test: test[:file],
+        type: 'Validation',
+        failure: failure,
+        time: (finish - start).to_s
+      }
+
       component_compiler
     end
 
+    tests_finish = Time.now
+    tests.time = (tests_finish - tests_start)
+
+    tests.generate_report(options[:report]) if options[:report]
     tests.print_results
     exit tests.exit_code
 
