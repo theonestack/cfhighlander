@@ -180,7 +180,7 @@ class HighlanderCli < Thor
   method_option :quiet, :type => :boolean, :default => true, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
   method_option :report, :type => :string, :aliases => '-r', :enum => ['json','xml'],
-      :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+      :desc => 'report output format in reports directory'
 
   def cftest(component_name = nil, autogenerate_dist = false)
 
