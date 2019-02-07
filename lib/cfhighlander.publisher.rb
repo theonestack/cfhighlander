@@ -7,9 +7,10 @@ module Cfhighlander
 
     class ComponentPublisher
 
-      def initialize(component, cleanup)
+      def initialize(component, cleanup, template_format)
         @component = component
         @cleanup_destination = cleanup
+        @template_format = template_format
       end
 
       def publishComponent
@@ -44,7 +45,7 @@ module Cfhighlander
         template_url = "https://#{@component.highlander_dsl.distribution_bucket}.s3.amazonaws.com/"
         template_url += @component.highlander_dsl.distribution_prefix + "/"
         template_url += @component.highlander_dsl.version
-        template_url += "/#{@component.name}.compiled.yaml"
+        template_url += "/#{@component.name}.compiled.#{@template_format}"
         return template_url
       end
 
