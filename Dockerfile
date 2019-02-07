@@ -17,6 +17,8 @@ WORKDIR /work
 
 USER cfhighlander
 
+RUN cfndsl -u
+
 # required for any calls via aws sdk
 ENV AWS_REGION us-east-1
 
