@@ -129,7 +129,7 @@ class HighlanderCli < Thor
 
   def cfpublish(component_name)
     compiler = cfcompile(component_name, true)
-    publisher = Cfhighlander::Publisher::ComponentPublisher.new(compiler.component, false)
+    publisher = Cfhighlander::Publisher::ComponentPublisher.new(compiler.component, false, options[:format])
     publisher.publishFiles(compiler.cfn_template_paths + compiler.lambda_src_paths)
 
     puts "\n\nUse following url to launch CloudFormation stack\n\n#{publisher.getLaunchStackUrl}\n\n"
@@ -160,7 +160,7 @@ class HighlanderCli < Thor
     component.distribution_prefix = distribution_prefix unless distribution_prefix.nil?
     component.load
 
-    publisher = Cfhighlander::Publisher::ComponentPublisher.new(component, true)
+    publisher = Cfhighlander::Publisher::ComponentPublisher.new(component, true, 'yaml')
     publisher.publishComponent
   end
 
