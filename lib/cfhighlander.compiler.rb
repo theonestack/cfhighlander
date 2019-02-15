@@ -89,7 +89,8 @@ module Cfhighlander
         cfn_template = renderer.result(OpenStruct.new({
             'dsl' => dsl,
             'component_cfndsl' => component_cfndsl,
-            'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files)
+            'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files),
+            'distribution_format' => out_format
         }).instance_eval {binding})
 
         # write to output file
@@ -129,7 +130,7 @@ module Cfhighlander
         dsl = @component.highlander_dsl
 
         # create out dir if not there
-        @cfn_output_location = "#{@workdir}/out/#{format}"
+        @cfn_output_location = "#{@workdir}/out/#{format}" if @cfn_output_location.nil?
         output_dir = @cfn_output_location
         FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 

@@ -1,16 +1,7 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Outputs:
-  c1OutParam:
-    Value:
-      Ref: Bucket
-  c1bc1OutParam:
-    Value:
-      Ref: c1bBucket
 Resources:
   Bucket:
-    Type: AWS::S3::Bucket
-  c1bBucket:
     Type: AWS::S3::Bucket
   c1NamedBucket:
     Type: AWS::S3::Bucket
@@ -20,6 +11,8 @@ Resources:
         - bucketnames
         - default
         - name
+  c1bBucket:
+    Type: AWS::S3::Bucket
   c1bc1NamedBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -39,7 +32,34 @@ Resources:
             - Ref: Bucket
             - Ref: c1bBucket
           - "-c2"
+Outputs:
+  CfTemplateUrl:
+    Value: "/c.compiled.yaml"
+  CfTemplateVersion:
+    Value: latest
+  c1OutParam:
+    Value:
+      Ref: Bucket
+  c1aCfTemplateUrl:
+    Value: "/c1.compiled.yaml"
+  c1aCfTemplateVersion:
+    Value: latest
+  c1bc1OutParam:
+    Value:
+      Ref: c1bBucket
+  c1bCfTemplateUrl:
+    Value: "/c1.compiled.yaml"
+  c1bCfTemplateVersion:
+    Value: latest
+  c2CfTemplateUrl:
+    Value: "/c2.compiled.yaml"
+  c2CfTemplateVersion:
+    Value: latest
 Parameters:
+  UseC1:
+    Type: String
+    Default: ''
+    NoEcho: false
   c1abubbleParam:
     Type: String
     Default: ''
@@ -48,15 +68,12 @@ Parameters:
     Type: String
     Default: ''
     NoEcho: false
-  UseC1:
-    Type: String
-    Default: ''
-    NoEcho: false
+Description: c@latest - vlatest
 Conditions:
   UseC1:
     Fn::Equals:
     - Ref: UseC1
-    - "true"
+    - 'true'
 Mappings:
   bucketnames:
     default:
@@ -64,4 +81,3 @@ Mappings:
   c1bbucketnames:
     default:
       name: mybucketname
-Description: c@latest - vlatest

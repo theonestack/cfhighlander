@@ -77,7 +77,7 @@ end
 
 ```
 
-... compile the template with ... 
+... compile the template with ...
 
 ```shell
 cfcompile application
@@ -120,8 +120,8 @@ used in conjuction with ECS Cluster
 - [rds-postgres](https://github.com/theonestack/hl-component-rds-postgres) - RDS Component for Postgres engine
 - [aurora-mysql](https://github.com/theonestack/hl-component-aurora-mysql) - Aurora component for MySQL engine
 - [aurora-postgres](https://github.com/theonestack/hl-component-aurora-postgres) - Aurora component for Postgres engine
-- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-memcache) - Aws Elasticache - Memcache engine 
-- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-redis) - Aws Elasticache - Redis engine 
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-memcache) - Aws Elasticache - Memcache engine
+- [elasticache-memcache](https://github.com/theonestack/hl-component-elasticache-redis) - Aws Elasticache - Redis engine
 - [asg](https://github.com/theonestack/hl-component-asg) - AutoScalingGroup component
 - [cognito](https://github.com/theonestack/hl-component-cognito) - Cognito user pools, custom domain names and clients
 
@@ -134,7 +134,7 @@ From shell, command below will generate cloudformation for given component in `o
 cfcompile component_name
 ```
 
-Or from outer cfhighlander template, just pull component using `Component` DSL statement 
+Or from outer cfhighlander template, just pull component using `Component` DSL statement
 
 ```ruby
 CfhighlanderTemplate do
@@ -264,9 +264,9 @@ via CLI (`--dstbucket`, `--dstprefix`, `-v`). Default distribution bucket and pr
 for more details on this statements. Version defaults to `latest` if not explicitly given using `-v` switch
 
 If no distribution options is given using mentioned CLI options or DSL statements,
-bucket will be automatically created for you. Bucket name defaults to 
+bucket will be automatically created for you. Bucket name defaults to
 `$ACCOUNT.$REGION.cfhighlander.templates`, with `/published-templates`
-prefix. 
+prefix.
 
 *cfpublish* command will give you quick launch CloudFirmation stack URL to assist
 you in creating your stack:
@@ -710,7 +710,7 @@ This is also default render mode - if no render mode is specified `Substack` wil
 
 `Inline` - places all defined resources from inner component in outer component cloudformation template. Resources,
 Outputs, Conditions, Parameters and Mappings are all inlined - please note that some of the template elements may be renamed in this
-process in order to assure unique names. 
+process in order to assure unique names.
 
 There are some limitations when using inline components - Inlined component parameters, having values as outputs from another component (inlined or not)
 can't be referenced in component conditions. However, conditions referencing mapping values or parameters passed as mapping values,
@@ -722,13 +722,13 @@ are allowed.
 by referencing Zone Name (rather than ZoneId), meaning there is no explicit dependency between the resources. When both components
 are rendered as substack, implicit dependency is created if there is at least one output from component A passed as parameter
 to component B. Rendering components inlined removes this implicitly defined dependency, as a consequence stack deletion or creation
-may be halted, as record set is being created/deleted before prior the record set. 
+may be halted, as record set is being created/deleted before prior the record set.
 
 **`WARNING`** Be aware of [resource, condition, parameter, output and mapping limits](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html) on a single template
 when rendering inner components inlined.
 
 **`EXAMPLE`** All of the VPC resources will be rendered in outer component template, while bastion
-will be referenced as substack in example below. 
+will be referenced as substack in example below.
 
 ```ruby
 CfhighlanderTemplate do
@@ -760,6 +760,58 @@ available in cfhighlander templates of all components.
 `CFHIGHLANDER_WORKDIR` - defaults to $PWD, determines location of 'out' folder where all of the
 generated files are placed
 
-`CFHIGHLANDER_AWS_RETRY_LIMIT` - defaults to 10. Number of retries for AWS SDK before giving up. 
+`CFHIGHLANDER_AWS_RETRY_LIMIT` - defaults to 10. Number of retries for AWS SDK before giving up.
 AWS SDK uses exponential backoff to make the API calls
- 
+
+
+
+## Testing components
+
+Tests are designed for testing different configuration options on components.
+They can be defined as `my_test.test.yaml` files in the `tests/` directory.
+Each test file represents a single test configuration which is then compiled
+and validated against AWS cloudformation api.
+
+### Metadata
+
+test metadata needs to defined as bellow with at least a `name:`. Other key:values are for documentation.
+
+```yaml
+test_metadata:
+  type: config
+  name: queues with config overrides
+  description: Create 2 queues with name and override available config
+```
+
+### Running Test
+
+```bash
+$ cfhighlander cftest [component] [options]
+```
+
+```bash
+Usage:
+  cfhighlander cftest component[@version] -f, --format=FORMAT
+
+Options:
+  -d, [--directory=DIRECTORY]        # Tests directory
+                                     # Default: tests
+  -t, [--tests=one two three]        # Point to specific test files using the relative path
+      [--dstbucket=DSTBUCKET]        # Distribution S3 bucket
+      [--dstprefix=DSTPREFIX]        # Distribution S3 prefix
+  -f, --format=FORMAT                # CloudFormation templates output format
+                                     # Default: yaml
+                                     # Possible values: yaml, json
+      [--validate], [--no-validate]  # Optionally validate template
+                                     # Default: true
+  -q, [--quiet], [--no-quiet]        # Silently agree on user prompts (e.g. Package lambda command)
+                                     # Default: true
+  -r, [--report=REPORT]              # report output format in reports directory
+                                     # Possible values: json, xml
+
+Test Highlander component with test case config
+```
+
+### Reports
+
+By default test will print the output to stdout. You can output to a file with a format of xml or json using the `-r` option

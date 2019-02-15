@@ -2,8 +2,18 @@ require_relative '../bin/cfhighlander'
 require 'git'
 require 'pp'
 require 'octokit'
-
 THEONSTACK_COMPONENT_PREFIX = 'hl-component-'
+THEONSTACK_COMPONENTS = %w(
+  hl-component-vpc
+  hl-component-ecs
+  hl-component-loadbalancer
+  hl-component-asg
+  hl-component-bastion
+  hl-component-fargate
+  hl-component-ecs-service
+  hl-component-aurora-mysql
+  hl-component-rds-postgres
+)
 
 RSpec.describe HighlanderCli, "#run" do
 
@@ -55,7 +65,7 @@ RSpec.describe HighlanderCli, "#run" do
     client = Octokit::Client.new
     cwd = Dir.pwd
     client.get('orgs/theonestack/repos').each do |repo|
-      if repo[:name].start_with? THEONSTACK_COMPONENT_PREFIX
+      if THEONSTACK_COMPONENTS.include? repo[:name]
         it "theonestack/#{repo[:name]} compiles" do
           test_repo(cwd, repo[:name], 'master')
         end
@@ -63,4 +73,3 @@ RSpec.describe HighlanderCli, "#run" do
     end
   end
 end
-
