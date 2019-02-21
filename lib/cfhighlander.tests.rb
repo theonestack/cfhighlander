@@ -1,5 +1,6 @@
 require 'yaml'
 require 'json'
+require 'util/hash.util'
 
 module CfHighlander
   class Tests
@@ -27,14 +28,8 @@ module CfHighlander
     def get_cases
       @test_files.each do |file|
         test_case = load_test_case(file)
-        default_config = load_defaut_config()
-        test_config = merge_recursively(test_case,default_config)
-        @cases << { metadata: test_case['test_metadata'], file: file, config: test_config }
+        @cases << { metadata: test_case['test_metadata'], file: file, config: test_case.deep_merge(load_defaut_config) }
       end
-    end
-
-    def merge_recursively(a, b)
-      a.merge(b) {|key, a_item, b_item| merge_recursively(a_item, b_item) }
     end
 
     def load_defaut_config()
