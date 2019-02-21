@@ -27,7 +27,21 @@ module CfHighlander
     def get_cases
       @test_files.each do |file|
         test_case = load_test_case(file)
-        @cases << { metadata: test_case['test_metadata'], file: file, config: test_case }
+        default_config = load_defaut_config()
+        test_config = merge_recursively(test_case,default_config)
+        @cases << { metadata: test_case['test_metadata'], file: file, config: test_config }
+      end
+    end
+
+    def merge_recursively(a, b)
+      a.merge(b) {|key, a_item, b_item| merge_recursively(a_item, b_item) }
+    end
+
+    def load_defaut_config()
+      begin
+        YAML.load(File.read("#{@component_name}.config.yaml"))
+      rescue Errno::ENOENT => e
+        {}
       end
     end
 
