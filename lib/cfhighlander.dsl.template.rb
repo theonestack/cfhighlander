@@ -11,6 +11,7 @@ Dir["#{extensions_folder}/*.rb"].each {|f|
 require_relative './cfhighlander.dsl.base'
 require_relative './cfhighlander.dsl.params'
 require_relative './cfhighlander.dsl.subcomponent'
+require_relative './cfhighlander.config.loader'
 
 module Cfhighlander
 
@@ -486,10 +487,13 @@ def CfhighlanderTemplate(&block)
   end
 
   # process convention over configuration componentname.config.yaml files
+  config_loader = Cfhighlander::Config::Loader.new
+
   @potential_subcomponent_overrides.each do |name, config|
 
     # if there is component with given file name
-    if (not instance.subcomponents.find {|s| s.name == name}.nil?)
+    first_component = name.split('.').first
+    if (not instance.subcomponents.find { |s| s.name == first_component }.nil?)
       instance.config['components'] = {} unless instance.config.key? 'components'
       instance.config['components'][name] = {} unless instance.config['components'].key? name
       instance.config['components'][name]['config'] = {} unless instance.config['components'][name].key? 'config'
@@ -503,8 +507,7 @@ def CfhighlanderTemplate(&block)
           end
         end
       end
-
-      instance.config['components'][name]['config'].extend config
+      instance.config.extend(config_loader.get_nested_config(name, config))
     end
   end
 
