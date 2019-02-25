@@ -28,7 +28,7 @@ module CfHighlander
     def get_cases
       @test_files.each do |file|
         test_case = load_test_case(file)
-        @cases << { metadata: test_case['test_metadata'], file: file, config: test_case.deep_merge(load_defaut_config) }
+        @cases << { metadata: test_case['test_metadata'], file: file, config: load_defaut_config.deep_merge(test_case) }
       end
     end
 
