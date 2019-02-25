@@ -1,5 +1,7 @@
 FROM ruby:2.5-alpine
 
+ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-2.21.0}
+
 COPY . /src
 
 WORKDIR /src
@@ -16,6 +18,8 @@ RUN adduser -u 1000 -D cfhighlander && \
 WORKDIR /work
 
 USER cfhighlander
+
+RUN cfndsl -u ${CFNDSL_SPEC_VERSION}
 
 # required for any calls via aws sdk
 ENV AWS_REGION us-east-1

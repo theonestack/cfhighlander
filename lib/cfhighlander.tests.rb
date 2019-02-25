@@ -1,5 +1,6 @@
 require 'yaml'
 require 'json'
+require 'util/hash.util'
 
 module CfHighlander
   class Tests
@@ -27,7 +28,15 @@ module CfHighlander
     def get_cases
       @test_files.each do |file|
         test_case = load_test_case(file)
-        @cases << { metadata: test_case['test_metadata'], file: file, config: test_case }
+        @cases << { metadata: test_case['test_metadata'], file: file, config: test_case.deep_merge(load_defaut_config) }
+      end
+    end
+
+    def load_defaut_config()
+      begin
+        YAML.load(File.read("#{@component_name}.config.yaml"))
+      rescue Errno::ENOENT => e
+        {}
       end
     end
 
