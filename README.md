@@ -671,7 +671,7 @@ Lambda functions are defined in cfhighlander templates using `LambdaFunctions` D
 ```ruby
 CfhighlanderTemplate do
     Name 'my_app'
-    LambdaFunctions 'lambdas'
+    LambdaFunctions 'highlanderdocoexample'
 end
 ```
 
@@ -680,8 +680,7 @@ cfhighlander component configuration key, under which lambda functions, and thei
 IAM roles are defined. Consider configuration below - all keys are commented with explanation
 
 ```yaml
-# this is top level key that is passed to LambdaFunctions dsl statement in highlander template
-lambdas:
+highlanderdocoexample:
 
   # custom policies can be referenced in roles
   custom_policies:
@@ -689,66 +688,66 @@ lambdas:
       action:
         - cognito-idp:*
       resource: '*'
-      
-  # at least one role must be defined 
+
+  # at least one role must be defined
   roles:
-    default:    
-      # using one of the default policies, or custom policies defined above 
+    default:
+      # using one of the default policies, or custom policies defined above
       # defined at https://github.com/theonestack/cfhighlander/blob/develop/cfndsl_ext/config/managed_policies.yaml
-      policies_inline:   
+      policies_inline:
         - cloudwatch-logs
         - cognito
-      
+
       # managed IAM policies are supported as well
       policies_managed:
         - arn:aws:iam::aws:policy/IAMReadOnlyAccess
-        - Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:role/my_app_role'
-        
+        - Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:policy/my_app_policy'
+
   # you can have multiple functions defined, each as key under 'functions'
   functions:
     myapp:
-    
+
       # link to a role key above defined - mandatory
       role: default
-      
-      # code location. Can be file, archive, s3://url or http(s)://url. 
+
+      # code location. Can be file, archive, s3://url or http(s)://url.
       # mandatory configuration option
-      code: out/myapp.zip
-      
+      code: src/app.py
+
       # lambda runtime
       runtime: python3.6
-      
+
       # functions that are not named are having their name auto generated via cloudformation
       # this key defaults to false if not given
       named: true
-      
+
       # if function is named, either top level key (myapp) will be used, or explicit name
       # this key is optional, and used only if named: is set to true
-      function_name: 
+      function_name:
         Fn::Sub: '${EnvironmentName}-myapp-${EnvironmentVersion}'
-        
+
       # function timeout (defaults to 30)
       timeout: 30
-      
+
       # lambda function entrypoint
-      handler: app.handler
-      
+      handler: app.index
+
       # command to install any dependencies (optional)
       # if you don't want to get prompted for every command execution use -q (quiet) option
-      package_cmd: 'pip3 install -r requirements.txt'
-      
+      package_cmd: 'pip3 install -r requirements.txt -t .'
+
       # (optional) allowed source. e.g. invocation using SNS
       # for every allowed source, source_arn can be provided optionally
       allowed_sources:
-       - 
+       -
          principal: sns.amazonaws.com
-       - 
+       -
          principal: sns.amazonaws.com
          source_arn: arn:aws:sns:us-east-2:123456789012:my-topic
-      
+
       # (optional) invoke function on a schedule, with optional payload
       schedules:
-       - cronExpression: 'rate(5 minutes)'
+       - cronExpression: 'rate(1 minute)'
          payload: '{ "message": "ping" }'
 ```
 
