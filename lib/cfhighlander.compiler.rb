@@ -231,7 +231,7 @@ module Cfhighlander
       def generateSourceArchives
 
         # Clear previous packages
-        FileUtils.rmtree "#{@workdir}/output/lambdas"
+        FileUtils.rmtree "#{@workdir}/out/lambdas"
 
         archive_paths = []
 
@@ -304,7 +304,7 @@ module Cfhighlander
               full_path_candidate_3 = lambda_config['code']
               full_path = full_path_candidate_1
               full_path = full_path_candidate_2 if (File.exist? full_path_candidate_2 and (not File.exist? full_path))
-              full_path = full_path_candidate_3 if (File.exist? full_path_candidate_1 and (not File.exist? full_path))
+              full_path = full_path_candidate_3 if (File.exist? full_path_candidate_3 and (not File.exist? full_path))
 
               # if component extends another component, both parent and child paths should be taken in
               # consideration
@@ -318,7 +318,7 @@ module Cfhighlander
 
                 full_path = full_path_candidate_1
                 full_path = full_path_candidate_2 if (File.exist? full_path_candidate_2 and (not File.exist? full_path))
-                full_path = full_path_candidate_3 if (File.exist? full_path_candidate_1 and (not File.exist? full_path))
+                full_path = full_path_candidate_3 if (File.exist? full_path_candidate_3 and (not File.exist? full_path))
 
                 component_dir = nil unless parent_exists
               end
@@ -376,7 +376,7 @@ module Cfhighlander
           puts "INFO | Lambda #{name} | Created zip package #{full_destination_path} with digest #{sha256}"
           @metadata['sha256'][name] = sha256
           @metadata['version'][name] = timestamp
-        end
+        end if ((not @lambda_config.nil?) and @lambda_config.key? 'functions')
 
         return archive_paths
       end
