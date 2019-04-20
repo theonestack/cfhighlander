@@ -2,7 +2,7 @@ language: ruby
 rvm:
   - 2.5
 before_install:
-  - gem install bundler
+  - gem install bundler:1.17.2
 script:
   - gem build cfhighlander.gemspec
   - gem install cfhighlander-*.gem
