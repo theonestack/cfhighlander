@@ -61,6 +61,11 @@ module Cfhighlander
         end
       end
 
+      def clear_out_dir
+        # Clear previous packages
+        FileUtils.rmtree "#{@workdir}/out/"
+      end
+
       def process_lambdas=(value)
         @process_lambdas = value
         @sub_components.each { |scc| scc.process_lambdas = value }
@@ -230,9 +235,6 @@ module Cfhighlander
 
       def generateSourceArchives
 
-        # Clear previous packages
-        FileUtils.rmtree "#{@workdir}/out/lambdas"
-
         archive_paths = []
 
         # Cached downloads map
@@ -382,7 +384,13 @@ module Cfhighlander
       end
 
       def mergeComponentConfig
-        @component.config['lambda_metadata'] = @metadata
+        if @component.config.key? 'lambda_metadata'
+          @metadata.each do |mk,mh|
+            mh.each do |k,v| @component.config['lambda_metadata'][mk][k] = v end
+          end
+        else
+          @component.config['lambda_metadata'] = @metadata
+        end
       end
 
     end
