@@ -653,12 +653,140 @@ so extension methods can be consumed within cfndsl template.
 
 ### LambdaFunctions
 
+
+Cfhighlander supports following in terms of lambda source code management
+
+- Package and deploy lambda that has source code published to s3 as zip archive
+- Package and deploy lambda that has source code published to http(s) url
+- Package and deploy lambda with absolute source code location, or relative to component
+  root directory
+- When extending certain highlander component, of 
+- Execute arbitrary 'package command' before creating final archive. This allows for downloading
+code dependencies
+
+#### Configuration and rendering
+
+Lambda functions are defined in cfhighlander templates using `LambdaFunctions` DSL statement:
+
+```ruby
+CfhighlanderTemplate do
+    Name 'my_app'
+    LambdaFunctions 'highlanderdocoexample'
+end
+```
+
+In example above, `lambdas` - value passed to `LambdaFunctions` dsl statement is actually
+cfhighlander component configuration key, under which lambda functions, and their respective
+IAM roles are defined. Consider configuration below - all keys are commented with explanation
+
+```yaml
+highlanderdocoexample:
+
+  # custom policies can be referenced in roles
+  custom_policies:
+    cognito:
+      action:
+        - cognito-idp:*
+      resource: '*'
+
+  # at least one role must be defined
+  roles:
+    default:
+      # using one of the default policies, or custom policies defined above
+      # defined at https://github.com/theonestack/cfhighlander/blob/develop/cfndsl_ext/config/managed_policies.yaml
+      policies_inline:
+        - cloudwatch-logs
+        - cognito
+
+      # managed IAM policies are supported as well
+      policies_managed:
+        - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+        - Fn::Sub: 'arn:aws:iam::${AWS::AccountId}:policy/my_app_policy'
+
+  # you can have multiple functions defined, each as key under 'functions'
+  functions:
+    myapp:
+
+      # link to a role key above defined - mandatory
+      role: default
+
+      # code location. Can be file, archive, s3://url or http(s)://url.
+      # mandatory configuration option
+      code: src/app.py
+
+      # lambda runtime
+      runtime: python3.6
+
+      # functions that are not named are having their name auto generated via cloudformation
+      # this key defaults to false if not given
+      named: true
+
+      # if function is named, either top level key (myapp) will be used, or explicit name
+      # this key is optional, and used only if named: is set to true
+      function_name:
+        Fn::Sub: '${EnvironmentName}-myapp-${EnvironmentVersion}'
+
+      # function timeout (defaults to 30)
+      timeout: 30
+
+      # lambda function entrypoint
+      handler: app.index
+
+      # command to install any dependencies (optional)
+      # if you don't want to get prompted for every command execution use -q (quiet) option
+      package_cmd: 'pip3 install -r requirements.txt -t .'
+
+      # (optional) allowed source. e.g. invocation using SNS
+      # for every allowed source, source_arn can be provided optionally
+      allowed_sources:
+       -
+         principal: sns.amazonaws.com
+       -
+         principal: sns.amazonaws.com
+         source_arn: arn:aws:sns:us-east-2:123456789012:my-topic
+
+      # (optional) invoke function on a schedule, with optional payload
+      schedules:
+       - cronExpression: 'rate(1 minute)'
+         payload: '{ "message": "ping" }'
+```
+
+
 #### Packaging and publishing
 
-#### Rendering
+During cfhighlander compilation process, every defined lambda functio goes through process
+of packaging:
+
+- If s3 URI or http(s) uri is given as function code, it is being downloaded 
+- Temporary packaging directory is created
+- If `package_cmd` key is given, this command is being executed in temporary directory
+- Whole temporary directory is compressed and moved to `out/lambdas/$function.$timestamp.zip` 
+- Sha256 hash is calculated for given file and rendered into cloudformation as function 
+  version
+- Packaging information is rendered into `out/lambdas/$function.$timestamp.zip.info.yaml` 
+  and added to final archive
+  
+Any archive with `*.zip` extension will be uploaded to s3 with `cfpublish` command
+
 
 #### Referencing
 
+As all of the lambda functions are rendered as cloudformation resources, they can be 
+referenced in other blocks. E.g. with example above, application component could have 
+following output defined in component's cfndsl file
+
+```ruby
+# myapp.cfndsl.rb
+CloudFormation do
+
+    Output('MyAppFunctionName') do
+        Value(Ref('myapp'))
+    end
+
+end
+
+
+```
 
 ## Finding templates and creating components
 

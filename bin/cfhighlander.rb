@@ -39,6 +39,7 @@ class HighlanderCli < Thor
 
     # compile cfndsl template
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.clear_out_dir
     component_compiler.writeConfig(true)
   end
 
@@ -59,6 +60,7 @@ class HighlanderCli < Thor
 
     # compile cfndsl template
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.clear_out_dir
     component_compiler.silent_mode = options[:quiet]
     out_format = options[:format]
     component_compiler.compileCfnDsl out_format
@@ -102,6 +104,7 @@ class HighlanderCli < Thor
 
     # compile cloud formation
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
+    component_compiler.clear_out_dir
     component_compiler.silent_mode = options[:quiet]
     out_format = options[:format]
     component_compiler.compileCloudFormation out_format

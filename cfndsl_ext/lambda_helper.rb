@@ -43,7 +43,11 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
       end
 
       if !lambda_config['named'].nil? && lambda_config['named']
-        FunctionName(name)
+        if lambda_config['function_name'].nil?
+          FunctionName(name)
+        else
+          FunctionName(lambda_config['function_name'])
+        end
       end
     end
 
@@ -51,6 +55,33 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
       DeletionPolicy('Retain')
       FunctionName(Ref(name))
       CodeSha256(lambda_metadata['sha256'][key])
+    end
+
+    # Scheduled triggering of lambda function
+    if lambda_config.key?('schedules')
+      lambda_config['schedules'].each_with_index do |schedule, index|
+        Events_Rule("Lambda#{name}Schedule#{index}") do
+          if schedule['cronExpression'].include?('rate')
+          then
+            expression = schedule['cronExpression']
+          else
+            expression = "cron(#{schedule['cronExpression']})"
+          end
+          ScheduleExpression(expression)
+          State('ENABLED')
+          target = {
+              'Arn' => FnGetAtt(name, 'Arn'), 'Id' => "lambda#{name}",
+          }
+          target['Input'] = schedule['payload'] if schedule.key?('payload')
+          Targets([target])
+        end
+        Lambda_Permission("Lambda#{name}Schedule#{index}Permission") do
+          FunctionName(Ref(name))
+          Action('lambda:InvokeFunction')
+          Principal('events.amazonaws.com')
+          SourceArn FnGetAtt("Lambda#{name}Schedule#{index}", 'Arn')
+        end
+      end
     end
 
     # Generate lambda function Policy
@@ -66,21 +97,6 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
           end
         end
         i += 1
-      end
-    end
-
-    # Scheduled triggering of lambda function
-    if lambda_config.key?('schedules')
-      lambda_config['schedules'].each_with_index do |schedule, index|
-        Events_Rule("Lambda#{name}Schedule#{index}") do
-          ScheduleExpression("cron(#{schedule['cronExpression']})")
-          State('ENABLED')
-          target = {
-              'Arn' => FnGetAtt(name, 'Arn'), 'Id' => "lambda#{name}",
-          }
-          target['Input'] = schedule['payload'] if schedule.key?('payload')
-          Targets([target])
-        end
       end
     end
 

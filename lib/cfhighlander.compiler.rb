@@ -51,7 +51,7 @@ module Cfhighlander
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
-          Dir["#{global_extensions_folder}/*.rb"].each {|f| @@global_extensions_paths << f}
+          Dir["#{global_extensions_folder}/*.rb"].each { |f| @@global_extensions_paths << f }
         end
 
         @component.highlander_dsl.subcomponents.each do |sub_component|
@@ -61,14 +61,19 @@ module Cfhighlander
         end
       end
 
+      def clear_out_dir
+        # Clear previous packages
+        FileUtils.rmtree "#{@workdir}/out/"
+      end
+
       def process_lambdas=(value)
         @process_lambdas = value
-        @sub_components.each {|scc| scc.process_lambdas = value}
+        @sub_components.each { |scc| scc.process_lambdas = value }
       end
 
       def silent_mode=(value)
         @silent_mode = value
-        @sub_components.each {|scc| scc.silent_mode = value}
+        @sub_components.each { |scc| scc.silent_mode = value }
       end
 
       def compileCfnDsl(out_format)
@@ -77,7 +82,7 @@ module Cfhighlander
         dsl = @component.highlander_dsl
         component_cfndsl = @component.cfndsl_content
 
-        @component.highlander_dsl.subcomponents.each {|sc|
+        @component.highlander_dsl.subcomponents.each { |sc|
           sc.distribution_format = out_format
         }
 
@@ -91,7 +96,7 @@ module Cfhighlander
             'component_cfndsl' => component_cfndsl,
             'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files),
             'distribution_format' => out_format
-        }).instance_eval {binding})
+        }).instance_eval { binding })
 
         # write to output file
         output_dir = "#{@workdir}/out/cfndsl"
@@ -102,7 +107,7 @@ module Cfhighlander
         puts "cfndsl template for #{dsl.name} written to #{output_path}"
         @cfndsl_compiled_path = output_path
 
-        @sub_components.each {|subcomponent_compiler|
+        @sub_components.each { |subcomponent_compiler|
           puts "Rendering sub-component cfndsl: #{subcomponent_compiler.component_name}"
           subcomponent_compiler.compileCfnDsl out_format
         }
@@ -230,9 +235,6 @@ module Cfhighlander
 
       def generateSourceArchives
 
-        # Clear previous packages
-        FileUtils.rmtree "#{@workdir}/output/lambdas"
-
         archive_paths = []
 
         # Cached downloads map
@@ -299,13 +301,27 @@ module Cfhighlander
               # zip local code
               component = @component
               component_dir = component.template.template_location
-              full_path = "#{component_dir}/lambdas/#{lambda_config['code']}"
+              full_path_candidate_1 = "#{component_dir}/lambdas/#{lambda_config['code']}"
+              full_path_candidate_2 = "#{component_dir}/#{lambda_config['code']}"
+              full_path_candidate_3 = lambda_config['code']
+              full_path = full_path_candidate_1
+              full_path = full_path_candidate_2 if (File.exist? full_path_candidate_2 and (not File.exist? full_path))
+              full_path = full_path_candidate_3 if (File.exist? full_path_candidate_3 and (not File.exist? full_path))
 
+              # if component extends another component, both parent and child paths should be taken in
+              # consideration
               until (File.exist? full_path or component_dir.nil?)
                 parent_exists = (not component.extended_component.nil?)
                 component = component.extended_component if parent_exists
                 component_dir = component.template.template_location if parent_exists
-                full_path = "#{component_dir}/lambdas/#{lambda_config['code']}" if parent_exists
+                full_path_candidate_1 = "#{component_dir}/lambdas/#{lambda_config['code']}" if parent_exists
+                full_path_candidate_2 = "#{component_dir}/#{lambda_config['code']}" if parent_exists
+                full_path_candidate_3 = "#{lambda_config['code']}" if parent_exists
+
+                full_path = full_path_candidate_1
+                full_path = full_path_candidate_2 if (File.exist? full_path_candidate_2 and (not File.exist? full_path))
+                full_path = full_path_candidate_3 if (File.exist? full_path_candidate_3 and (not File.exist? full_path))
+
                 component_dir = nil unless parent_exists
               end
               if component_dir.nil?
@@ -343,9 +359,14 @@ module Cfhighlander
                 end
               end
               File.delete full_destination_path if File.exist? full_destination_path
-              zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
-              zip_generator.write
 
+              # if source is already zip file, just add manifest to it
+              if full_path.end_with? '.zip'
+                FileUtils.copy full_path, full_destination_path
+              else
+                zip_generator = Cfhighlander::Util::ZipFileGenerator.new(lambda_source_dir, full_destination_path)
+                zip_generator.write
+              end
             end
           end
           # add version information to avoid same package ever deployed 2 times
@@ -357,13 +378,19 @@ module Cfhighlander
           puts "INFO | Lambda #{name} | Created zip package #{full_destination_path} with digest #{sha256}"
           @metadata['sha256'][name] = sha256
           @metadata['version'][name] = timestamp
-        end
+        end if ((not @lambda_config.nil?) and @lambda_config.key? 'functions')
 
         return archive_paths
       end
 
       def mergeComponentConfig
-        @component.config['lambda_metadata'] = @metadata
+        if @component.config.key? 'lambda_metadata'
+          @metadata.each do |mk,mh|
+            mh.each do |k,v| @component.config['lambda_metadata'][mk][k] = v end
+          end
+        else
+          @component.config['lambda_metadata'] = @metadata
+        end
       end
 
     end
