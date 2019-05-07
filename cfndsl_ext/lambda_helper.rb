@@ -67,7 +67,8 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
           else
             expression = "cron(#{schedule['cronExpression']})"
           end
-          ScheduleExpression(expression)
+          ScheduleExpression(FnSub(expression))
+          Name schedule['name'] if schedule.has_key?('name')
           State('ENABLED')
           target = {
               'Arn' => FnGetAtt(name, 'Arn'), 'Id' => "lambda#{name}",
