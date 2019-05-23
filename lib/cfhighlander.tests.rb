@@ -28,13 +28,14 @@ module CfHighlander
     def get_cases
       @test_files.each do |file|
         test_case = load_test_case(file)
+        puts "THIS #{load_default_config}"
         @cases << { metadata: test_case['test_metadata'], file: file, config: load_default_config.deep_merge(test_case) }
       end
     end
 
     def load_default_config
       begin
-        YAML.load(File.read("#{@component_name}.config.yaml"))
+        YAML.load_file("#{@component_name}.config.yaml") || {}
       rescue Errno::ENOENT => e
         {}
       end
@@ -42,7 +43,7 @@ module CfHighlander
 
     def load_test_case(file)
       begin
-        YAML.load(File.read(file))
+        YAML.load_file(file)
       rescue Errno::ENOENT => e
         abort "No test file found for #{file}"
       end
