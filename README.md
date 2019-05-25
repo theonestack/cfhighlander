@@ -660,7 +660,7 @@ Cfhighlander supports following in terms of lambda source code management
 - Package and deploy lambda that has source code published to http(s) url
 - Package and deploy lambda with absolute source code location, or relative to component
   root directory
-- When extending certain highlander component, of 
+- When extending certain highlander component, of
 - Execute arbitrary 'package command' before creating final archive. This allows for downloading
 code dependencies
 
@@ -736,6 +736,12 @@ highlanderdocoexample:
       # if you don't want to get prompted for every command execution use -q (quiet) option
       package_cmd: 'pip3 install -r requirements.txt -t .'
 
+      # creates a log group with cloudformation and sets the retention period in days
+      # if not set lambda will create the log group with a unlimited retention
+      # note that if lambda has already created a log group, it will need to be deleted
+      # before this can be updated.
+      log_retention: 30
+
       # (optional) allowed source. e.g. invocation using SNS
       # for every allowed source, source_arn can be provided optionally
       allowed_sources:
@@ -757,22 +763,22 @@ highlanderdocoexample:
 During cfhighlander compilation process, every defined lambda functio goes through process
 of packaging:
 
-- If s3 URI or http(s) uri is given as function code, it is being downloaded 
+- If s3 URI or http(s) uri is given as function code, it is being downloaded
 - Temporary packaging directory is created
 - If `package_cmd` key is given, this command is being executed in temporary directory
-- Whole temporary directory is compressed and moved to `out/lambdas/$function.$timestamp.zip` 
-- Sha256 hash is calculated for given file and rendered into cloudformation as function 
+- Whole temporary directory is compressed and moved to `out/lambdas/$function.$timestamp.zip`
+- Sha256 hash is calculated for given file and rendered into cloudformation as function
   version
-- Packaging information is rendered into `out/lambdas/$function.$timestamp.zip.info.yaml` 
+- Packaging information is rendered into `out/lambdas/$function.$timestamp.zip.info.yaml`
   and added to final archive
-  
+
 Any archive with `*.zip` extension will be uploaded to s3 with `cfpublish` command
 
 
 #### Referencing
 
-As all of the lambda functions are rendered as cloudformation resources, they can be 
-referenced in other blocks. E.g. with example above, application component could have 
+As all of the lambda functions are rendered as cloudformation resources, they can be
+referenced in other blocks. E.g. with example above, application component could have
 following output defined in component's cfndsl file
 
 ```ruby
