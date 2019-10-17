@@ -118,6 +118,7 @@ module Cfhighlander
           export_config: {},
           conditional: false,
           enabled: true,
+          dependson: [],
           render: Cfhighlander::Model::Component::Substack,
           &block)
         puts "INFO: Requested subcomponent #{name} with template #{template}"
@@ -129,7 +130,7 @@ module Cfhighlander
         end
 
         name = template if name.nil?
-
+        
         # load component
         component = Cfhighlander::Dsl::Subcomponent.new(self,
             name,
@@ -140,6 +141,7 @@ module Cfhighlander
             export_config,
             conditional,
             enabled,
+            dependson,
             render == Cfhighlander::Model::Component::Inline
         )
         # component.instance_eval(&block) unless block.nil?
