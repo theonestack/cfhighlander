@@ -651,6 +651,19 @@ end
 Will include any cfndsl libraries present and exported in vpc template
 so extension methods can be consumed within cfndsl template.
 
+### Component dependson
+
+If you require dependencies between nest stacks, this can be defined in the component by using the `dependson` attribute with the value of the depend component names. This will take an array of component names or a string with a single component name. This adds the cloudformation `DependsOn` property to the stack resource in the master template.
+
+```ruby
+CfhighlanderTemplate do
+  Name 'test'
+  Component name: 'vpc', template: 'vpc'
+  Component name: 'bastion', template: 'bastion'
+  Component name: 'ecs', template: 'ecs', dependson: ['vpc','bastion']
+end
+```
+
 ### LambdaFunctions
 
 
