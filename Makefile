@@ -1,7 +1,7 @@
-RUN_RUBY_CMD=docker-compose run --rm -v $$PWD:/src -w /src ruby
-CFHL_DOCKER_TAG:=latest
-
 .EXPORT_ALL_VARIABLES:
+
+RUN_RUBY_CMD=docker-compose run --rm -v $$PWD:/src -w /src ruby
+CFHL_DOCKER_TAG ?= latest
 
 all: clean build test
 
@@ -28,6 +28,7 @@ buildDocker:
 _build:
 	gem build cfhighlander.gemspec
 _test:
+	gem install bundler:2.0.1
 	bundle install
 	cfndsl -u 2.19.0
 	bundle exec rspec
