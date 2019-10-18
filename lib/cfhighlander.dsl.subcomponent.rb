@@ -34,7 +34,8 @@ module Cfhighlander
           :name,
           :template,
           :template_version,
-          :inlined
+          :inlined,
+          :dependson
 
       def initialize(parent,
           name,
@@ -45,6 +46,7 @@ module Cfhighlander
           export_config = {},
           conditional = false,
           enabled = true,
+          dependson = [],
           inline = false,
           distribution_format = 'yaml')
 
@@ -53,8 +55,9 @@ module Cfhighlander
         @export_config = export_config
         @component_sources = component_sources
         @conditional = conditional
+        @dependson = [*dependson]
         @inlined = inline
-
+        
         template_name = template
         template_version = 'latest'
         if template.include?('@') and not (template.start_with? 'git')

@@ -11,6 +11,9 @@ CloudFormation do
 <% for @subcomponent in dsl.subcomponents %>
     CloudFormation_Stack('<%= @subcomponent.cfn_name %>') do
         TemplateURL '<%= @subcomponent.distribution_url %>'
+        <%- if !@subcomponent.dependson.empty? %>
+        DependsOn <%= @subcomponent.dependson %>
+        <%- end %>
         Parameters ({
         <% for @param in @subcomponent.parameters %><%="\t"%>'<%=@param.name %>' => <%= @param.cfndsl_value %>,
         <% end %>})
