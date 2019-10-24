@@ -6,13 +6,19 @@ THEONSTACK_COMPONENT_PREFIX = 'hl-component-'
 THEONSTACK_COMPONENTS = %w(
   hl-component-vpc
   hl-component-ecs
-  hl-component-loadbalancer
-  hl-component-asg
+  hl-component-application-loadbalancer
+  hl-component-network-loadbalancer
+  hl-component-eks-cluster
   hl-component-bastion
   hl-component-fargate
   hl-component-ecs-service
   hl-component-aurora-mysql
-  hl-component-rds-postgres
+  hl-component-aurora-postgres
+  hl-component-s3
+  hl-component-cloudfront
+  hl-component-sqs
+  hl-component-amazonmq
+  hl-component-sftp
 )
 
 RSpec.describe HighlanderCli, "#run" do
@@ -34,9 +40,9 @@ RSpec.describe HighlanderCli, "#run" do
 
     Dir.chdir wd
     ARGV.clear
-    ARGV << 'cfcompile'
+    ARGV << 'cftest'
     ARGV << repo.gsub(THEONSTACK_COMPONENT_PREFIX,'')
-    ARGV << '--validate' unless is_travis_pr
+    ARGV << '--no-validate' if is_travis_pr
 
     default_maps = {
         '123456789012' => {
@@ -52,10 +58,13 @@ RSpec.describe HighlanderCli, "#run" do
     if is_travis_pr
       File.write "#{ENV['HIGHLANDER_WORKDIR']}/az.mappings.yaml", default_maps.to_yaml
     end
-
-    result = HighlanderCli.start
-
-    expect(result).not_to eq(nil)
+    
+    begin
+      described_class.start
+    rescue SystemExit => e
+      expect(e.status).to eq 0
+    end
+    
   end
 
   context "test theonestack default components" do
@@ -66,7 +75,7 @@ RSpec.describe HighlanderCli, "#run" do
     cwd = Dir.pwd
     client.get('orgs/theonestack/repos').each do |repo|
       if THEONSTACK_COMPONENTS.include? repo[:name]
-        it "theonestack/#{repo[:name]} compiles" do
+        it "theonestack/#{repo[:name]} passes cftests" do
           test_repo(cwd, repo[:name], 'master')
         end
       end
