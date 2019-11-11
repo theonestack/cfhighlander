@@ -132,15 +132,32 @@ module Cfhighlander
         @component_loaded.load @component_config_override
       end
 
-      def parameter(name:, value:)
+      def parameter(name:, value: nil, type: nil, noEcho: nil, allowedValues: nil, allowedPattern: nil, 
+                    maxLength: nil, maxValue: nil, minLength: nil, minValue: nil)
         existing_params = @component_loaded.highlander_dsl.parameters.param_list
         param_exists = existing_params.find { |p| p.name == name}
-        if (not param_exists)
-          @component_loaded.highlander_dsl.Parameters do
-            ComponentParam name, '', type: 'String'
-          end
+        
+        param_ovr = {}
+        
+        if !param_exists && !type.nil?
+          param_ovr[:type] = 'String'
+        elsif !type.nil?
+          param_ovr[:type] = type
         end
-        @param_values[name] = value
+
+        param_ovr[:noEcho] = noEcho unless noEcho.nil?
+        param_ovr[:allowedValues] = allowedValues unless allowedValues.nil?
+        param_ovr[:allowedPattern] = allowedPattern unless allowedPattern.nil?
+        param_ovr[:maxLength] = maxLength unless maxLength.nil?
+        param_ovr[:maxValue] = maxValue unless maxValue.nil?
+        param_ovr[:minLength] = minLength unless minLength.nil?
+        param_ovr[:minValue] = minValue unless minValue.nil?
+        
+        @component_loaded.highlander_dsl.Parameters do
+          ComponentParam name, '', param_ovr
+        end
+        
+        @param_values[name] = value unless value.nil?
       end
 
       def config(key = '', value = '')

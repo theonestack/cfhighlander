@@ -613,6 +613,26 @@ end
 
 ```
 
+#### Overriding Parameter Properties
+
+Components have pre defined parameters with properties such as Type, AllowedValues, NoEcho etc.
+These properties can be overridden on the parent component.
+
+```ruby
+CfhighlanderTemplate do
+    
+    Paramater do
+      ComponentParam 'EnvironmentType', 'development', allowedValues: ['development','alpha','production']
+    end
+    
+    Component 'ecs' do
+      parameter name: 'EnvironmentType', allowedValues: ['development','alpha','production']
+      parameter name: 'Ami', value: '/ssm/path/Ami', type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    end
+    
+end
+```
+
 
 #### MappingParam
 
