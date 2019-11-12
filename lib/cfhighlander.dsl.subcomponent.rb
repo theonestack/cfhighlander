@@ -132,14 +132,37 @@ module Cfhighlander
         @component_loaded.load @component_config_override
       end
 
-      def parameter(name:, value:)
+      def parameter(name:, value: '', defaultValue: nil, type: nil, noEcho: nil, allowedValues: nil, allowedPattern: nil, 
+                    maxLength: nil, maxValue: nil, minLength: nil, minValue: nil)
         existing_params = @component_loaded.highlander_dsl.parameters.param_list
-        param_exists = existing_params.find { |p| p.name == name}
-        if (not param_exists)
+        parameter = existing_params.find { |p| p.name == name}
+
+        if !parameter      
+          param_ovr = {}
+          param_ovr[:type] = type.nil? ? 'String' : type 
+          param_ovr[:noEcho] = noEcho unless noEcho.nil?
+          param_ovr[:allowedValues] = allowedValues unless allowedValues.nil?
+          param_ovr[:allowedPattern] = allowedPattern unless allowedPattern.nil?
+          param_ovr[:maxLength] = maxLength unless maxLength.nil?
+          param_ovr[:maxValue] = maxValue unless maxValue.nil?
+          param_ovr[:minLength] = minLength unless minLength.nil?
+          param_ovr[:minValue] = minValue unless minValue.nil?
+          
           @component_loaded.highlander_dsl.Parameters do
-            ComponentParam name, '', type: 'String'
+            ComponentParam name, value, param_ovr
           end
+        else
+          parameter.default_value = defaultValue unless defaultValue.nil?
+          parameter.type unless type.nil?
+          parameter.no_echo = noEcho unless noEcho.nil?
+          parameter.allowed_values = allowedValues unless allowedValues.nil?
+          parameter.allowed_pattern = allowedPattern unless allowedPattern.nil?
+          parameter.max_length = maxLength unless maxLength.nil?
+          parameter.max_value = maxValue unless maxValue.nil?
+          parameter.min_length = minLength unless minLength.nil?
+          parameter.min_value = minValue unless minValue.nil?
         end
+        
         @param_values[name] = value
       end
 
