@@ -35,8 +35,9 @@ module Cfhighlander
           :template,
           :template_version,
           :inlined,
-          :dependson
-
+          :dependson,
+          :condition
+          
       def initialize(parent,
           name,
           template,
@@ -45,6 +46,7 @@ module Cfhighlander
           config = {},
           export_config = {},
           conditional = false,
+          condition = nil,
           enabled = true,
           dependson = [],
           inline = false,
@@ -55,6 +57,7 @@ module Cfhighlander
         @export_config = export_config
         @component_sources = component_sources
         @conditional = conditional
+        @condition = condition
         @dependson = [*dependson]
         @inlined = inline
         
@@ -90,13 +93,13 @@ module Cfhighlander
 
         # add condition to parent if conditonal component
         if @conditional
-          condition_param_name = "Enable#{@cfn_name}"
-          @parent.Condition(condition_param_name, CfnDsl::Fn.new('Equals', [
-              CfnDsl::RefDefinition.new(condition_param_name),
+          condition_name = @condition.nil? ? "Enable#{@cfn_name}" : @condition
+          @parent.Condition(condition_name, CfnDsl::Fn.new('Equals', [
+              CfnDsl::RefDefinition.new(condition_name),
               'true'
           ]).to_json)
           @parent.Parameters do
-            ComponentParam condition_param_name, enabled.to_s, allowedValues: %w(true false)
+            ComponentParam condition_name, enabled.to_s, allowedValues: %w(true false)
           end
         end
       end

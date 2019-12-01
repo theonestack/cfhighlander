@@ -117,6 +117,7 @@ module Cfhighlander
           config: {},
           export_config: {},
           conditional: false,
+          condition: nil,
           enabled: true,
           dependson: [],
           render: Cfhighlander::Model::Component::Substack,
@@ -140,6 +141,7 @@ module Cfhighlander
             config,
             export_config,
             conditional,
+            condition,
             enabled,
             dependson,
             render == Cfhighlander::Model::Component::Inline
