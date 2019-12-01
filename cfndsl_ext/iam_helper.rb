@@ -16,17 +16,23 @@ def service_role_assume_policy(services)
 end
 
 
-def iam_policy_allow(name, actions, resource='*')
+def iam_policy_allow(name, actions, resource='*', condition={})
+
+  statement = {
+      Sid: name.gsub('_', '').gsub('-', '').downcase,
+      Action: actions,
+      Resource: resource,
+      Effect: 'Allow'
+  }
+  
+  if !condition.empty?
+    statement[:Condition] = condition
+  end
 
   return {
       PolicyName: name,
       PolicyDocument: {
-          Statement: [{
-              Sid: name.gsub('_', '').gsub('-', '').downcase,
-              Action: actions,
-              Resource: resource,
-              Effect: 'Allow'
-          }]
+          Statement: [statement]
       }
   }
 end
