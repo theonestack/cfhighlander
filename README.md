@@ -459,6 +459,23 @@ end
 
 ```
 
+**Conditional Groups** - If you have more than 1 stack you want to control with a single parameter, you can supply the `condition:` option with a string value on each component you want to control with the condition.
+
+```ruby
+CfhighlanderTemplate do
+  
+  # Components always required
+  Component 'vpc'
+  Component name: 'ecs', template: 'ecs'
+  
+  # Components only required in development environments
+  Component name: 'linux-bastion', template: 'bastion', conditional: true, condition: 'EnableDevelopmentResources', enabled: false
+  Component name: 'windows-bastion', template: 'bastion', conditional: true, condition: 'EnableDevelopmentResources', enabled: false
+
+
+end
+```
+
 **Convert config value to parameter** - In case of inner component having configuration value
 you wish to expose as runtime parameter, it is possible to do so with limitation that configuration
 value is only used in *resource declarations*, as property value. If configuration value is being used

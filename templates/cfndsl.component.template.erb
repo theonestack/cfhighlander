@@ -17,7 +17,7 @@ CloudFormation do
         Parameters ({
         <% for @param in @subcomponent.parameters %><%="\t"%>'<%=@param.name %>' => <%= @param.cfndsl_value %>,
         <% end %>})
-        <% if @subcomponent.conditional %>Condition 'Enable<%= @subcomponent.cfn_name %>' <% end %>
+        <% if @subcomponent.conditional %>Condition '<%= @subcomponent.condition %>' <% end %>
     end
 <% end %>
 
