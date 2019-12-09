@@ -93,13 +93,14 @@ module Cfhighlander
 
         # add condition to parent if conditonal component
         if @conditional
-          condition_name = @condition.nil? ? "Enable#{@cfn_name}" : @condition
-          @parent.Condition(condition_name, CfnDsl::Fn.new('Equals', [
-              CfnDsl::RefDefinition.new(condition_name),
+          condition = "Enable#{@cfn_name}" if @condition.nil?
+          @condition = condition
+          @parent.Condition(condition, CfnDsl::Fn.new('Equals', [
+              CfnDsl::RefDefinition.new(condition),
               'true'
           ]).to_json)
           @parent.Parameters do
-            ComponentParam condition_name, enabled.to_s, allowedValues: %w(true false)
+            ComponentParam condition, enabled.to_s, allowedValues: %w(true false)
           end
         end
       end
