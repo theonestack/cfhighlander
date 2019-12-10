@@ -283,6 +283,13 @@ module Cfhighlander
         propagated_param.name = "#{sub_component.cfn_name}#{param.name}" unless param.is_global
         component.parameters.addParam propagated_param
         puts " no autowiring candidates, propagate parameter to parent"
+        
+        if param.type == 'CommaDelimitedList'
+          return CfnDsl::Fn.new('Join', [',',
+            CfnDsl::RefDefinition.new(propagated_param.name)
+          ]).to_json
+        end
+        
         return CfnDsl::RefDefinition.new(propagated_param.name).to_json
 
       end
