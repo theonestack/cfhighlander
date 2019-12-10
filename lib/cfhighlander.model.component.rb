@@ -109,8 +109,10 @@ module Cfhighlander
         if File.exist? legacy_cfhighlander_path
           STDERR.puts "DEPRECATED: #{legacy_cfhighlander_path} - Use *.cfhighlander.rb"
           @highlander_dsl_path = legacy_cfhighlander_path
+          ENV['CF_COMPONENT_PATH'] = @component_dir
         else
           @highlander_dsl_path = "#{@component_dir}/#{@template.template_name}.cfhighlander.rb"
+          ENV['CF_COMPONENT_PATH'] = @component_dir
         end
 
         @cfndsl_path = "#{@component_dir}/#{@template.template_name}.cfndsl.rb"
