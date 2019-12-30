@@ -54,7 +54,9 @@ class HighlanderCli < Thor
       :enum => %w(yaml json), :desc => 'CloudFormation templates output format'
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
-
+  method_option :cfndsl_binding, :type => :boolean, :default => false, :aliases => '-b',
+      :desc => 'Enables the legacy cfndsl binding for component configuration'
+          
   def dslcompile(component_name)
     component = build_component(options, component_name)
 
@@ -62,6 +64,7 @@ class HighlanderCli < Thor
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
     component_compiler.clear_out_dir
     component_compiler.silent_mode = options[:quiet]
+    component_compiler.cfndsl_binding = options[:cfndsl_binding]
     out_format = options[:format]
     component_compiler.compileCfnDsl out_format
   end
@@ -80,7 +83,9 @@ class HighlanderCli < Thor
       :desc => 'Optionally validate template'
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
-
+  method_option :cfndsl_binding, :type => :boolean, :default => false, :aliases => '-b',
+      :desc => 'Enables the legacy cfndsl binding for component configuration'
+          
   def cfcompile(component_name = nil, autogenerate_dist = false)
 
     if component_name.nil?
@@ -106,6 +111,7 @@ class HighlanderCli < Thor
     component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
     component_compiler.clear_out_dir
     component_compiler.silent_mode = options[:quiet]
+    component_compiler.cfndsl_binding = options[:cfndsl_binding]
     out_format = options[:format]
     component_compiler.compileCloudFormation out_format
     if options[:validate]
@@ -129,6 +135,8 @@ class HighlanderCli < Thor
       :desc => 'Optionally validate template'
   method_option :quiet, :type => :boolean, :default => false, :aliases => '-q',
       :desc => 'Silently agree on user prompts (e.g. Package lambda command)'
+  method_option :cfndsl_binding, :type => :boolean, :default => false, :aliases => '-b',
+      :desc => 'Enables the legacy cfndsl binding for component configuration'
 
   def cfpublish(component_name)
     compiler = cfcompile(component_name, true)

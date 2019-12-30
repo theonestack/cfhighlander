@@ -37,6 +37,7 @@ module Cfhighlander
 
         @workdir = ENV['CFHIGHLANDER_WORKDIR']
         @component = component
+        @cfndsl_binding = false
         @sub_components = []
         @component_name = component.highlander_dsl.name.downcase
         @cfndsl_compiled = false
@@ -74,6 +75,11 @@ module Cfhighlander
       def silent_mode=(value)
         @silent_mode = value
         @sub_components.each { |scc| scc.silent_mode = value }
+      end
+      
+      def cfndsl_binding=(value)
+        @cfndsl_binding = value
+        @sub_components.each { |scc| scc.cfndsl_binding = value }
       end
 
       def compileCfnDsl(out_format)
@@ -123,7 +129,8 @@ module Cfhighlander
         # write config
         cfndsl_opts = []
         cfndsl_opts.push([:yaml, @config_yaml_path])
-
+        
+        CfnDsl.disable_binding unless @cfndsl_binding
         # grab cfndsl model
         model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
         @cfn_model = model
