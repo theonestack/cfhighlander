@@ -28,8 +28,8 @@ CloudFormation do
     # cfhighlander generated lambda functions
     <% for @key in dsl.lambda_functions_keys %>
         render_lambda_functions(self,
-        <%= @key %>,
-        lambda_metadata,
+        external_parameters[:<%= @key %>],
+        external_parameters[:lambda_metadata],
         {'bucket'=>'<%= dsl.distribution_bucket %>','prefix' => '<%= dsl.distribution_prefix %>', 'version'=>'<%= dsl.version %>'})
     <% end %>
 <% end %>
