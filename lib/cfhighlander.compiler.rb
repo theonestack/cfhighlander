@@ -130,7 +130,6 @@ module Cfhighlander
         cfndsl_opts = []
         cfndsl_opts.push([:yaml, @config_yaml_path])
         
-        CfnDsl.disable_binding unless @cfndsl_binding
         # grab cfndsl model
         model = CfnDsl.eval_file_with_extras(@cfndsl_compiled_path, cfndsl_opts, false)
         @cfn_model = model

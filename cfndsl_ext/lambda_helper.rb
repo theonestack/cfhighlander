@@ -50,7 +50,9 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
         end
       end
     end
-
+    
+    puts "\n\nI AM HERE\n\n"
+    
     Lambda_Version("#{name}Version#{lambda_metadata['version'][key]}") do
       DeletionPolicy('Retain')
       FunctionName(Ref(name))
