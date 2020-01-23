@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'highline', '>=1.7.10','<1.8'
   s.add_runtime_dependency 'thor', '~>0.20', '<1'
-  s.add_runtime_dependency 'cfndsl', '1.0.0.pre.1'
+  s.add_runtime_dependency 'cfndsl', '~> 1', '<2'
   s.add_runtime_dependency 'rubyzip', '>=2.0.0', '<3'
   s.add_runtime_dependency 'aws-sdk-core', '~> 3','<4'
   s.add_runtime_dependency 'aws-sdk-s3', '~> 1', '<2'
