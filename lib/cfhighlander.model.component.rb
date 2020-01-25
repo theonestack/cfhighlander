@@ -241,9 +241,6 @@ module Cfhighlander
       end
       def eval_cfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
-        # there is no need for processing lambda source code during cloudformation evaluation,
-        # this version never gets published
-        compiler.process_lambdas = false
         @cfn_model = compiler.evaluateCloudFormation().as_json
         @cfn_model_raw = JSON.parse(@cfn_model.to_json)
         @outputs = (
