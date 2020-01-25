@@ -967,6 +967,26 @@ test_metadata:
   description: Create 2 queues with name and override available config
 ```
 
+### Test Paramaters
+
+If you want to test a component with a parameter input you can specify the `test-parameters:` key with key:value pairs of parameters
+
+```yaml
+# Define the test parameter
+test_parameters:
+  SecurityGroupId: sg-123456789
+
+# Test configuration
+security_group_rules:
+  -
+    from: 22
+    protocol: tcp
+    security_group_id:
+      # use the parameter within our test
+      Ref: SecurityGroupId
+    desc: ssh access from another security group
+```
+
 ### Running Test
 
 ```bash

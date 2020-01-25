@@ -214,6 +214,10 @@ class HighlanderCli < Thor
         puts "INFO: Reloading component, as auto-generated distribution settings  are being applied..."
         component.load
       end if autogenerate_dist
+      
+      test[:test_parameters].each do |name,value|
+        component.highlander_dsl.parameters.ComponentParam(name,value)
+      end
 
       # compile cloud formation
       component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(component)
