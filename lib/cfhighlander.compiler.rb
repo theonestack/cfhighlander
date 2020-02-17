@@ -86,6 +86,10 @@ module Cfhighlander
           sc.distribution_format = out_format
         }
 
+        # figure out cfndsl version
+        cfndsl_version = CfnDsl::VERSION
+        legacy_cfndsl = cfndsl_version.to_f < 1
+
         # indent component cfndsl
         component_cfndsl.gsub!("\n", "\n\t")
         component_cfndsl.gsub!("\r\n", "\r\n\t")
@@ -95,7 +99,9 @@ module Cfhighlander
             'dsl' => dsl,
             'component_cfndsl' => component_cfndsl,
             'component_requires' => (@@global_extensions_paths + @component.cfndsl_ext_files),
-            'distribution_format' => out_format
+            'distribution_format' => out_format,
+            'legacy_cfndsl' => legacy_cfndsl,
+            'cfndsl_version' => cfndsl_version
         }).instance_eval { binding })
 
         # write to output file
