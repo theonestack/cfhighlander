@@ -2,7 +2,7 @@
     load('<%= @require %>')
 <% end %>
 CloudFormation do
-  # cfhl meta: cfndl_version=<%=cfndsl_version %>
+  # cfhl meta: cfndsl_version=<%=cfndsl_version %>
 <% unless legacy_cfndsl -%>
 <% dsl.config.each_key do |key|-%>
   <%=key-%> = external_parameters.fetch(:<%=key-%>, nil)
