@@ -27,6 +27,10 @@ buildDocker:
 
 _build:
 	gem build cfhighlander.gemspec
+
+_local_install:
+	gem install cfhighlander-*.gem
+
 _test:
 	gem install bundler:2.0.1
 	bundle install

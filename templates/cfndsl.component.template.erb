@@ -2,12 +2,17 @@
     load('<%= @require %>')
 <% end %>
 CloudFormation do
-
+  # cfhl meta: cfndsl_version=<%=cfndsl_version %>
+<% unless legacy_cfndsl -%>
+<% dsl.config.each_key do |key|-%>
+  <%=key-%> = external_parameters.fetch(:<%=key-%>, nil)
+<% end -%>
+<% end -%>
 <% for @mapping in dsl.mappings %>
     Mapping('<%= @mapping %>', mappings['<%= @mapping %>'])
-<% end %>
+<% end -%>
 
-# render subcomponents
+  # render subcomponents
 <% for @subcomponent in dsl.subcomponents %>
     CloudFormation_Stack('<%= @subcomponent.cfn_name %>') do
         TemplateURL '<%= @subcomponent.distribution_url %>'
