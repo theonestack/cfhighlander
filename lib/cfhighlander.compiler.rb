@@ -31,7 +31,8 @@ module Cfhighlander
           :cfn_template_paths,
           :silent_mode,
           :lambda_src_paths,
-          :process_lambdas
+          :process_lambdas,
+          :lambda_mock_resolve
 
       def initialize(component)
 
@@ -48,6 +49,7 @@ module Cfhighlander
         @config_yaml_path = nil
         @cfn_model = nil
         @process_lambdas = true
+        @lambda_mock_resolve = false
 
         if @@global_extensions_paths.empty?
           global_extensions_folder = "#{File.dirname(__FILE__)}/../cfndsl_ext"
@@ -74,6 +76,11 @@ module Cfhighlander
       def silent_mode=(value)
         @silent_mode = value
         @sub_components.each { |scc| scc.silent_mode = value }
+      end
+
+      def lambda_mock_resolve=(value)
+        @lambda_mock_resolve = value
+        @sub_components.each { |scc| scc.lambda_mock_resolve = value }
       end
 
       def compileCfnDsl(out_format)
@@ -211,7 +218,8 @@ module Cfhighlander
           resolver = LambdaResolver.new(@component,
               lfk,
               @workdir,
-              (not @silent_mode)
+              (not @silent_mode),
+              @lambda_mock_resolve
           )
           @lambda_src_paths += resolver.generateSourceArchives if @process_lambdas
           resolver.mergeComponentConfig
@@ -226,7 +234,8 @@ module Cfhighlander
 
     class LambdaResolver
 
-      def initialize(component, lambda_key, workdir, confirm_code_execution = true)
+      def initialize(component, lambda_key, workdir, confirm_code_execution = true,
+          mock_resolve=false)
         @component = component
         @lambda_config = @component.config[lambda_key]
         @component_dir = @component.component_dir
@@ -237,10 +246,11 @@ module Cfhighlander
             'version' => {}
         }
         @confirm_code_execution = confirm_code_execution
+        @mock_resolve = mock_resolve
       end
 
       def generateSourceArchives
-
+        return generateMockArchives if @mock_resolve
         archive_paths = []
 
         # Cached downloads map
@@ -389,10 +399,20 @@ module Cfhighlander
         return archive_paths
       end
 
+      def generateMockArchives
+        @lambda_config['functions'].each do |name, _|
+          @metadata['sha256'][name] = 'mockSHA'
+          @metadata['version'][name] = 'mockVersion'
+        end
+        return []
+      end
+
       def mergeComponentConfig
         if @component.config.key? 'lambda_metadata'
-          @metadata.each do |mk,mh|
-            mh.each do |k,v| @component.config['lambda_metadata'][mk][k] = v end
+          @metadata.each do |mk, mh|
+            mh.each do |k, v|
+              @component.config['lambda_metadata'][mk][k] = v
+            end
           end
         else
           @component.config['lambda_metadata'] = @metadata
