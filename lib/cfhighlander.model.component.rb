@@ -241,6 +241,7 @@ module Cfhighlander
       end
       def eval_cfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
+        compiler.lambda_mock_resolve = true
         @cfn_model = compiler.evaluateCloudFormation().as_json
         @cfn_model_raw = JSON.parse(@cfn_model.to_json)
         @outputs = (
