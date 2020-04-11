@@ -301,6 +301,16 @@ compiled cloudformation templates). Same CLI / DSL options apply as for *cfpubli
 
 ## Component configuration
 
+### Default configuration values
+
+Within each template, following configuration values are available by default in both cfhl and cfndsl templates
+
+- `template_name` - Name of the cfhighlander template
+- `template_verison` - Version of the cfhighlander component template used
+- `template_dir` - Disk location of the cfhighlander template. Can be used to reference local files within component, and does work with component inheritance
+
+### Defining and overriding configuration
+
 There are 4 levels of component configuration
 
 - Component local config file `component.config.yaml` (lowest priority)
