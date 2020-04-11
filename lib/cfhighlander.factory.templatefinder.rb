@@ -18,12 +18,13 @@ module Cfhighlander
             File.expand_path('components'),
             File.expand_path('.'),
         ]
-        default_locations.unshift "#{parent_path}components" if parent_path
-        default_locations.unshift parent_path if parent_path
+
         default_locations << ENV['CFHIGHLANDER_WORKDIR'] if ENV.key? 'CFHIGHLANDER_WORKDIR'
         default_locations.each do |predefined_path|
           component_sources.unshift(predefined_path)
         end
+        component_sources.unshift "#{parent_path}/components" if parent_path
+        component_sources.unshift parent_path if parent_path
 
         @component_sources = component_sources
       end
