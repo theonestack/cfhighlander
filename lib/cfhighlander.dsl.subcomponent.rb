@@ -81,7 +81,7 @@ module Cfhighlander
         build_distribution_url
 
         # load component
-        factory = Cfhighlander::Factory::ComponentFactory.new(@component_sources)
+        factory = Cfhighlander::Factory::ComponentFactory.new(@component_sources, parent.template_dir)
         @component_loaded = factory.loadComponentFromTemplate(
             @template,
             @template_version,

@@ -1,4 +1,5 @@
 require 'yaml'
+require 'securerandom'
 
 module Cfhighlander
 
@@ -131,6 +132,7 @@ module Cfhighlander
         @config['component_name'] = @name
         @config['template_name'] = @template.template_name
         @config['template_version'] = @template.template_version
+        @config['template_dir'] = @template.template_location
 
         Dir[candidate_mappings_path].each do |mapping_file|
           mappings = YAML.load(File.read(mapping_file))
@@ -188,11 +190,17 @@ module Cfhighlander
 
           # extend cfndsl, first comes parent, than child
           # this allows for child component to shadow parent component
-          # defined resources
+          # defined resources. While cfhl evaluation will use parent's template_dir configuration
+          # value, for cfndsl, as this is lower level, will resolve in child component template_dir configuration
+          # we need to ensure both parent and child components have access to their template_dir variables
+          new_template_dir_var = "template_dir_#{SecureRandom.hex[0..8]}"
+          extended_component.cfndsl_content.gsub!('template_dir', new_template_dir_var)
+          @config[new_template_dir_var] = extended_component.template.template_location
           @cfndsl_content = extended_component.cfndsl_content + @cfndsl_content
 
           @parent_dsl = extended_component.highlander_dsl
 
+          # in case of hldsl or cfndsl refering to template_dir
         end
       end
 
@@ -221,7 +229,6 @@ module Cfhighlander
           cfhl_script += ("\n#{key} = #{val.inspect}\n")
         end
         cfhl_script += File.read(@highlander_dsl_path)
-
         cfhl_dsl = eval(cfhl_script, binding)
         if not cfhl_dsl.extended_template.nil?
           @parent_template = cfhl_dsl.extended_template
@@ -239,6 +246,7 @@ module Cfhighlander
         @cfn_model = value.as_json
         @cfn_model_raw = JSON.parse(@cfn_model.to_json)
       end
+
       def eval_cfndsl
         compiler = Cfhighlander::Compiler::ComponentCompiler.new self
         compiler.lambda_mock_resolve = true
