@@ -8,8 +8,9 @@ module Cfhighlander
 
     class TemplateFinder
 
-      def initialize(component_sources = [])
-        ## First look in local $PWD/components folder
+      def initialize(component_sources = [], parent_path = nil)
+        ## First look in parent path and it's components folder
+        ## Then look in local $PWD/components folder
         ## Then search for cached $HOME/.highlander/components
         ## Then search in sources given by dsl
         default_locations = [
@@ -17,10 +18,13 @@ module Cfhighlander
             File.expand_path('components'),
             File.expand_path('.'),
         ]
+
         default_locations << ENV['CFHIGHLANDER_WORKDIR'] if ENV.key? 'CFHIGHLANDER_WORKDIR'
         default_locations.each do |predefined_path|
           component_sources.unshift(predefined_path)
         end
+        component_sources.unshift "#{parent_path}/components" if parent_path
+        component_sources.unshift parent_path if parent_path
 
         @component_sources = component_sources
       end
@@ -97,7 +101,7 @@ module Cfhighlander
           })
           # if code execution got so far we consider file exists and download it locally
           component_files = s3.list_objects_v2({ bucket: bucket, prefix: s3_prefix })
-          component_files.contents.each {|s3_object|
+          component_files.contents.each { |s3_object|
             file_name = s3_object.key.gsub(s3_prefix, '')
             destination_file = "#{local_destination}/#{file_name}"
             destination_dir = File.dirname(destination_file)
@@ -236,6 +240,7 @@ module Cfhighlander
       end
 
       def build_meta(template_name, template_version, template_location)
+        template_location = template_location[0..-2] if template_location.end_with? File::SEPARATOR
         return Cfhighlander::Model::TemplateMetadata.new(
             template_name: template_name,
             template_version: template_version,
