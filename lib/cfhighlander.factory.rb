@@ -13,8 +13,8 @@ module Cfhighlander
 
       attr_accessor :component_sources
 
-      def initialize(component_sources = [])
-        @template_finder = Cfhighlander::Factory::TemplateFinder.new(component_sources)
+      def initialize(component_sources = [], parent_path=nil)
+        @template_finder = Cfhighlander::Factory::TemplateFinder.new(component_sources, parent_path)
         @component_sources = component_sources
       end
 
