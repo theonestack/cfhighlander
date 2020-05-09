@@ -27,7 +27,6 @@ buildDocker:
 
 pushDocker: buildDocker
     docker push theonestack/cfhighlander:$(CFHL_DOCKER_TAG)
-    docker push theonestack/cfhighlander:latest
 
 _build:
 	gem build cfhighlander.gemspec
