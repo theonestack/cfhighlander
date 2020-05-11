@@ -95,12 +95,15 @@ module Cfhighlander
         if @conditional
           condition = "Enable#{@cfn_name}" if @condition.nil?
           @condition = condition
-          @parent.Condition(condition, CfnDsl::Fn.new('Equals', [
-              CfnDsl::RefDefinition.new(condition),
-              'true'
-          ]).to_json)
-          @parent.Parameters do
-            ComponentParam condition, enabled.to_s, allowedValues: %w(true false)
+          parent_condition_defined = @parent.conditions.find {|c| c.name == @condition}
+          unless parent_condition_defined
+            @parent.Condition(condition, CfnDsl::Fn.new('Equals', [
+                CfnDsl::RefDefinition.new(condition),
+                'true'
+            ]).to_json)
+            @parent.Parameters do
+              ComponentParam condition, enabled.to_s, allowedValues: %w(true false)
+            end
           end
         end
       end
