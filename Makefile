@@ -1,7 +1,7 @@
 .EXPORT_ALL_VARIABLES:
 
 RUN_RUBY_CMD=docker-compose run --rm -v $$PWD:/src -w /src ruby
-CFHL_DOCKER_TAG ?= latest
+CFHL_DOCKER_TAG ?= $(shell cat lib/cfhighlander.version.rb  | grep VERSION | cut -d '=' -f 2 | sed 's/\.freeze//' | sed 's/"//g')
 
 all: clean build test
 
@@ -23,7 +23,10 @@ test:
 .PHONY: test
 
 buildDocker:
-	docker build -t theonestack/cfhighlander:$(CFHL_DOCKER_TAG) .
+	docker build -t theonestack/cfhighlander:$(CFHL_DOCKER_TAG) -t theonestack/cfhighlander:latest .
+
+pushDocker: buildDocker
+    docker push theonestack/cfhighlander:$(CFHL_DOCKER_TAG)
 
 _build:
 	gem build cfhighlander.gemspec
