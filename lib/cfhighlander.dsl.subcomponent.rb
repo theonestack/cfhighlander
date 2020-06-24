@@ -36,7 +36,8 @@ module Cfhighlander
           :template_version,
           :inlined,
           :dependson,
-          :condition
+          :condition,
+          :template_timeout
           
       def initialize(parent,
           name,
@@ -49,6 +50,7 @@ module Cfhighlander
           condition = nil,
           enabled = true,
           dependson = [],
+          template_timeout = nil,
           inline = false,
           distribution_format = 'yaml')
 
@@ -59,6 +61,7 @@ module Cfhighlander
         @conditional = conditional
         @condition = condition
         @dependson = [*dependson]
+        @template_timeout = template_timeout
         @inlined = inline
         
         template_name = template

@@ -23,6 +23,9 @@ CloudFormation do
         <% for @param in @subcomponent.parameters %><%="\t"%>'<%=@param.name %>' => <%= @param.cfndsl_value %>,
         <% end %>})
         <% if @subcomponent.conditional %>Condition '<%= @subcomponent.condition %>' <% end %>
+        <%- if !@subcomponent.template_timeout.nil? %>
+        TimeoutInMinutes <%=  @subcomponent.template_timeout.to_i %>
+        <%- end %>
     end
 <% end %>
 

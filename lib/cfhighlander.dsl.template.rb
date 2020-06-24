@@ -37,7 +37,8 @@ module Cfhighlander
           :lambda_functions_keys,
           :description,
           :dependson_components,
-          :template_dir
+          :template_dir,
+          :template_timeout
 
       attr_reader :conditions,
           :subcomponents,
@@ -57,6 +58,7 @@ module Cfhighlander
         @lambda_functions_keys = []
         @dependson_components_templates = []
         @dependson_components = []
+        @template_timeout = nil
         @conditions = []
         @config_overrides = {}
         @extended_template = nil
@@ -127,6 +129,7 @@ module Cfhighlander
           condition: nil,
           enabled: true,
           dependson: [],
+          timeout: nil,
           render: Cfhighlander::Model::Component::Substack,
           &block)
         puts "INFO: Requested subcomponent #{name} with template #{template}"
@@ -151,6 +154,7 @@ module Cfhighlander
             condition,
             enabled,
             dependson,
+            timeout,
             render == Cfhighlander::Model::Component::Inline
         )
         # component.instance_eval(&block) unless block.nil?

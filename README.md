@@ -495,6 +495,17 @@ CfhighlanderTemplate do
 end
 ```
 
+**Nested Stack Timeout** - If you ant set a timeout on your nested cloudformation stack you can set this with the `timeout: int` option on the component.
+
+```ruby
+CfhighlanderTemplate do
+  
+  # sets a timeout for 10 minutes on the nested VPC stack, if the stack is not created or updated within 10 minutes the stack rolls back.
+  Component name: 'vpc', template: 'vpc-v2', timeout: 10
+  
+end
+```
+
 **Convert config value to parameter** - In case of inner component having configuration value
 you wish to expose as runtime parameter, it is possible to do so with limitation that configuration
 value is only used in *resource declarations*, as property value. If configuration value is being used
