@@ -37,5 +37,5 @@ _local_install:
 _test:
 	gem install bundler:2.0.1
 	bundle install
-	cfndsl -u 7.1.0
+	cfndsl -u 9.0.0
 	bundle exec rspec
