@@ -154,13 +154,12 @@ module Cfhighlander
           param_ovr[:maxValue] = maxValue unless maxValue.nil?
           param_ovr[:minLength] = minLength unless minLength.nil?
           param_ovr[:minValue] = minValue unless minValue.nil?
-          
           @component_loaded.highlander_dsl.Parameters do
             ComponentParam name, value, param_ovr
           end
         else
           parameter.default_value = defaultValue unless defaultValue.nil?
-          parameter.type unless type.nil?
+          parameter.type = type unless type.nil?
           parameter.no_echo = noEcho unless noEcho.nil?
           parameter.allowed_values = allowedValues unless allowedValues.nil?
           parameter.allowed_pattern = allowedPattern unless allowedPattern.nil?

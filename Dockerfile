@@ -11,7 +11,7 @@ RUN rm cfhighlander-*.gem ; \
     rm -rf /src
 
 RUN adduser -u 1000 -D cfhighlander && \
-    apk add --update python3 git openssh-client bash make && \
+    apk add --update python3 py3-pip git openssh-client bash make gcc python3-dev musl-dev && \
     ln $(which pip3) /bin/pip && \
     pip install awscli
 
