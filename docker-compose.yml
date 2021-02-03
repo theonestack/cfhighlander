@@ -5,7 +5,7 @@ volumes:
 
 services:
   ruby:
-    image: ruby:2.5
+    image: ruby:2.7
     volumes:
       - $HOME/.aws:/root/.aws
       - gem_cache:/usr/local/bundle
