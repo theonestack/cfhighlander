@@ -30,4 +30,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'git', '~> 1.4', '<2'
   s.add_runtime_dependency 'duplicate','~> 1.1'
   s.add_development_dependency 'rspec', '~> 3.7'
+
+  s.required_ruby_version = '>= 2.7'
 end

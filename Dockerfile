@@ -1,4 +1,4 @@
-FROM ruby:2.5-alpine
+FROM ruby:2.7-alpine
 
 ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-26.0.0}
 
