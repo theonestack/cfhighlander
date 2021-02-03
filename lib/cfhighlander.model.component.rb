@@ -133,6 +133,8 @@ module Cfhighlander
         @config['template_name'] = @template.template_name
         @config['template_version'] = @template.template_version
         @config['template_dir'] = @template.template_location
+        @config['distribution_bucket'] = @distribution_bucket
+        @config['distribution_prefix'] = @distribution_prefix
 
         Dir[candidate_mappings_path].each do |mapping_file|
           mappings = YAML.load(File.read(mapping_file))
