@@ -110,8 +110,13 @@ module Cfhighlander
           model = sub_component.component_loaded.cfn_model_raw
           model[element_name].each do |resource, value|
             # effective extraction of child resource into parent
-            parent_model[element_name] = {} unless parent_model.key? element_name
-            parent_model[element_name][resource] = value
+            # allows for line components to use - or _ in the component name
+            # and still generate valid references
+            safe_resource_name = resource.gsub('-','').gsub('_','')
+            unless element_name == 'Outputs' && resource.end_with?('CfTemplateUrl')
+              parent_model[element_name] = {} unless parent_model.key? element_name
+              parent_model[element_name][safe_resource_name] = value
+            end
           end if model.key? element_name
         end
       end
