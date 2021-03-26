@@ -21,6 +21,16 @@ Resources:
         - c1bbucketnames
         - default
         - name
+  c1cBucket:
+    Type: AWS::S3::Bucket
+  c1cc1NamedBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::FindInMap:
+        - c1-cbucketnames
+        - default
+        - name
   c2Bucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -40,19 +50,18 @@ Outputs:
   c1OutParam:
     Value:
       Ref: Bucket
-  c1aCfTemplateUrl:
-    Value: "/c1.compiled.yaml"
   c1aCfTemplateVersion:
     Value: latest
   c1bc1OutParam:
     Value:
       Ref: c1bBucket
-  c1bCfTemplateUrl:
-    Value: "/c1.compiled.yaml"
   c1bCfTemplateVersion:
     Value: latest
-  c2CfTemplateUrl:
-    Value: "/c2.compiled.yaml"
+  c1cc1OutParam:
+    Value:
+      Ref: c1-cBucket
+  c1cCfTemplateVersion:
+    Value: latest
   c2CfTemplateVersion:
     Value: latest
 Parameters:
@@ -68,6 +77,10 @@ Parameters:
     Type: String
     Default: ''
     NoEcho: false
+  c1cbubbleParam:
+    Type: String
+    Default: ''
+    NoEcho: false
 Description: c@latest - vlatest
 Conditions:
   UseC1:
@@ -79,5 +92,8 @@ Mappings:
     default:
       name: mybucketname
   c1bbucketnames:
+    default:
+      name: mybucketname
+  c1cbucketnames:
     default:
       name: mybucketname

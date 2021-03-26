@@ -10,6 +10,7 @@ CfhighlanderTemplate do
 
   Component template: 'c1', name: 'c1a', render: Inline
   Component template: 'c1', name: 'c1b', render: Inline
+  Component template: 'c1', name: 'c1-c', render: Inline
 
   Component template:'c2',name:'c2', render: Inline do
     parameter name: 'c1OutParam', value: FnIf('UseC1',
