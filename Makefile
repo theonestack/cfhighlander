@@ -2,7 +2,7 @@
 
 RUN_RUBY_CMD=docker-compose run --rm -v $$PWD:/src -w /src ruby
 CFHL_DOCKER_TAG ?= $(shell cat lib/cfhighlander.version.rb  | grep VERSION | cut -d '=' -f 2 | sed 's/\.freeze//' | sed 's/"//g')
-CFNDSL_SPEC_VERSION=34.0.0
+CFNDSL_SPEC_VERSION ?= 34.0.0
 
 all: clean build test
 
