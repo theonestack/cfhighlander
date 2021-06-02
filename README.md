@@ -863,6 +863,27 @@ end
 
 ```
 
+### Publishing Additonal Artifacts
+
+If you need to publish additonal files along with your cloudformation templates you can use the following DSL:
+
+```ruby
+CfhighlanderTemplate do
+    Name 'my_app'
+    PublishArtifact file: "my-apigateway-spec.yaml"
+end
+```
+
+This will upload the file `my-apigateway-spec.yaml` to the s3 destnation/distribution bucket using the default s3 prefix. If you want to override the s3 key you can use
+
+```ruby
+CfhighlanderTemplate do
+    Name 'my_app'
+    PublishArtifact file: "my-apigateway-spec.yaml", key: '/my-custom-path/my-custom-file.yaml'
+end
+```
+
+
 ## Finding templates and creating components
 
 
