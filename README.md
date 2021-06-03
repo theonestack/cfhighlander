@@ -1059,3 +1059,4 @@ Test Highlander component with test case config
 ### Reports
 
 By default test will print the output to stdout. You can output to a file with a format of xml or json using the `-r` option
+
