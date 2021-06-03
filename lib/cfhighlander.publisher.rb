@@ -83,6 +83,16 @@ module Cfhighlander
         end
         print "\n"
 
+        @component.highlander_dsl.publish_artifacts.each do |artifact|
+          s3_key = artifact[:key].nil? ? "#{prefix}/#{version}/#{artifact[:file]}" : artifact[:key]
+          print "\nPublishing artifact: #{artifact[:file]} to s3://#{bucket}/#{s3_key} ..."
+          s3.put_object({
+            body: File.read(artifact[:file]),
+            bucket: bucket,
+            key: s3_key
+          })
+          print ' [OK] '
+        end
       end
 
     end

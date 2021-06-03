@@ -37,7 +37,8 @@ module Cfhighlander
           :lambda_functions_keys,
           :description,
           :dependson_components,
-          :template_dir
+          :template_dir,
+          :publish_artifacts
 
       attr_reader :conditions,
           :subcomponents,
@@ -63,6 +64,7 @@ module Cfhighlander
         # execution blocks for subcomponents
         @subcomponents_exec = {}
         @template_dir = nil
+        @publish_artifacts = []
       end
 
       # DSL statements
@@ -205,6 +207,11 @@ module Cfhighlander
 
       def LambdaFunctions(config_key)
         @lambda_functions_keys << config_key
+      end
+
+      def PublishArtifact(file: nil, key: key=nil)
+        puts "INFO: adding artifact #{file} to publishing list"
+        @publish_artifacts << {file: file, key: key}
       end
 
       # Internal and interface functions
