@@ -155,7 +155,7 @@ module Cfhighlander
           param_ovr[:minLength] = minLength unless minLength.nil?
           param_ovr[:minValue] = minValue unless minValue.nil?
           @component_loaded.highlander_dsl.Parameters do
-            ComponentParam name, value, param_ovr
+            ComponentParam name, value, **param_ovr
           end
         else
           parameter.default_value = defaultValue unless defaultValue.nil?
