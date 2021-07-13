@@ -1,6 +1,6 @@
 require_relative './cfhighlander.compiler'
 require 'aws-sdk-s3'
-require 'uri'
+
 module Cfhighlander
 
   module Publisher
@@ -53,7 +53,7 @@ module Cfhighlander
         template_url = getTemplateUrl
         region = s3_bucket_region(@component.highlander_dsl.distribution_bucket)
         return "https://console.aws.amazon.com/cloudformation/home?region=#{region}#/stacks/create/review?filter=active&templateURL=" +
-            "#{URI::encode(template_url)}&stackName=#{@component.name}"
+            "#{CGI::escape(template_url)}&stackName=#{@component.name}"
       end
 
       def publishFiles(file_list)
