@@ -1,4 +1,5 @@
 require_relative '../cfhighlander.model.component'
+require_relative '../cfhighlander.error'
 require_relative './debug.util'
 require 'duplicate'
 
@@ -295,6 +296,11 @@ module Cfhighlander
               outval_refs.each do |out_ref|
                 component_name = out_ref[:component]
                 ref_sub_component = template.subcomponents.find {|sc| sc.name == component_name}
+
+                if ref_sub_component.nil?
+                  raise Cfhighlander::Error, "unable to find outputs from component #{component_name} reference by parameters in component #{sub_component.name}"
+                end
+
                 if ref_sub_component.inlined
                   # out refs here need to be replaced with actual values
                   replacement = output_values[out_ref[:component]][out_ref[:outputName]]
