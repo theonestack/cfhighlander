@@ -58,7 +58,6 @@ module Cfhighlander
         template.subcomponents.each do |sub_component|
           next unless sub_component.inlined
           model = sub_component.component_loaded.cfn_model_raw
-
           model[element_type].keys.each do |key|
             if keys_taken.include? key
               candidate = "#{sub_component.component_loaded.name}#{key}"
@@ -110,6 +109,16 @@ module Cfhighlander
           next unless sub_component.inlined
           model = sub_component.component_loaded.cfn_model_raw
           model[element_name].each do |resource, value|
+            if sub_component.conditional
+              # If the resource already has a conditon we need to combine it with the stack condition
+              if element_name == 'Conditions'
+                value = { "Fn::And" => [{"Condtion" => sub_component.condition}, value]}
+              end
+              # Adds the condition to the inlined resource if it doesn't already have a condition
+              if element_name == 'Resources'
+                value['Condition'] = sub_component.condition unless value.has_key?('Condition')
+              end
+            end
             # effective extraction of child resource into parent
             # allows for line components to use - or _ in the component name
             # and still generate valid references
