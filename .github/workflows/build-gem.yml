@@ -25,10 +25,10 @@ jobs:
         gem install bundler --no-doc
         bundle install
         bundle exec rspec
-        env:
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ap-southeast-2
+      env:
+        AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ap-southeast-2
     - name: build gem
       run: |
         gem build cfhighlander.gemspec
