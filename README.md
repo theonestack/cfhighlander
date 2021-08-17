@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/theonestack/cfhighlander.svg?branch=develop)](https://travis-ci.org/theonestack/cfhighlander) [![Join the chat at https://gitter.im/theonestack/cfhighlander](https://badges.gitter.im/theonestack/cfhighlander.svg)](https://gitter.im/theonestack/cfhighlander?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![Build Status](https://github.com/theonestack/cfhighlander/actions/workflows/build-gem.yml/badge.svg) [![Join the chat at https://gitter.im/theonestack/cfhighlander](https://badges.gitter.im/theonestack/cfhighlander.svg)](https://gitter.im/theonestack/cfhighlander?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Intro
 
