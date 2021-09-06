@@ -474,11 +474,11 @@ def CfhighlanderTemplate(&block)
 
   if @parent_dsl.nil?
     instance = Cfhighlander::Dsl::HighlanderTemplate.new
-    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+    puts "Processing highlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
         "\n\tConfig:#{@config}"
   else
     instance = @parent_dsl
-    puts "Processing higlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
+    puts "Processing highlander component #{@name}\n\tLocation:#{@highlander_dsl_path}" +
         "\n\tConfig:#{@config}\n\tParent: #{@parent_template}"
   end
 
