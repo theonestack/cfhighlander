@@ -103,7 +103,11 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
 
     if lambda_config.has_key?('log_retention')
       Logs_LogGroup("#{name}LogGroup") do
-        LogGroupName "/aws/lambda/#{name}"
+        if lambda_config['loggroup_name'].nil?
+          LogGroupName "/aws/lambda/#{name}"
+        else
+          LogGroupName lambda_config['loggroup_name']
+        end
         RetentionInDays lambda_config['log_retention'].to_i
       end
     end
