@@ -113,7 +113,7 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
         if lambda_config['loggroup_name'].nil?
           LogGroupName "/aws/lambda/#{name}"
         else
-          LogGroupName "/aws/lambda/#{lambda_config['loggroup_name']}"
+          LogGroupName FnSub("/aws/lambda/#{lambda_config['loggroup_name']}")
         end
         RetentionInDays lambda_config['log_retention'].to_i
       end
