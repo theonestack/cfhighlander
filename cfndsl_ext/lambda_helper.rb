@@ -30,6 +30,7 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
           S3Bucket: distribution['bucket'],
           S3Key: "#{distribution['prefix']}/#{distribution['version']}/#{lambda_metadata['path'][key]}"
       })
+      Layers lambda_config['layers'] unless lambda_config['layers'].nil?
 
       Environment(Variables: Hash[environment.collect { |k, v| [k, v] }])
 
