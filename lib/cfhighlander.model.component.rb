@@ -153,7 +153,7 @@ module Cfhighlander
 
 
         # evaluate template file and load parent if defined
-        evaluateHiglanderTemplate
+        evaluateHighlanderTemplate
 
         # set version if not defined
         @highlander_dsl.ComponentVersion(@version) unless @version.nil?
@@ -223,7 +223,7 @@ module Cfhighlander
         end
       end
 
-      def evaluateHiglanderTemplate
+      def evaluateHighlanderTemplate
         loadCfndslContent
 
         cfhl_script = ''

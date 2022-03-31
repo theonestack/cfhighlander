@@ -42,7 +42,11 @@ CloudFormation do
 <% for @param in dsl.parameters.param_list %>
     Parameter('<%= @param.name %>') do
       Type '<%= @param.type %>'
+      <%- if ['Number', 'List<Number>'].include?(@param.type) -%>
+      Default <%= @param.default_value %>
+      <%- else -%>
       Default '<%= @param.default_value %>'
+      <%- end -%>
 <%- unless @param.no_echo.nil? -%>
       NoEcho <%= @param.no_echo %>
 <%- end -%>
