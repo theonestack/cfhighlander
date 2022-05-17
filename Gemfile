@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 
-gem 'cfndsl', '>1.3', '<2'
+gem 'cfndsl', '>1.3.4', '<2'
 gem 'thor'
 gem 'highline', '>=1.7.10', '<1.8'
 gem 'aws-sdk-core', '~> 3', '<4'
