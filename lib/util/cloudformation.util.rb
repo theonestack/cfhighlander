@@ -112,7 +112,7 @@ module Cfhighlander
             if sub_component.conditional
               # If the resource already has a conditon we need to combine it with the stack condition
               if element_name == 'Conditions'
-                value = { "Fn::And" => [{"Condtion" => sub_component.condition}, value]}
+                value = { "Fn::And" => [{"Condition" => sub_component.condition}, value]}
               end
               # Adds the condition to the inlined resource if it doesn't already have a condition
               if element_name == 'Resources'
