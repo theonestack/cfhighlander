@@ -199,7 +199,9 @@ module Cfhighlander
         config_yaml_path = "#{@config_output_location}/#{@component_name}.config.yaml"
         FileUtils.mkdir_p(@config_output_location) unless Dir.exist?(@config_output_location)
 
-        File.write(config_yaml_path, @component.config.to_yaml)
+        config_yaml = JSON.parse(@component.config.to_json).to_yaml
+        File.write(config_yaml_path, config_yaml)
+        
         puts "Config for #{@component.highlander_dsl.name} written to #{config_yaml_path}"
 
         if write_subcomponents_config
