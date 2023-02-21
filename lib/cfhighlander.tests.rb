@@ -40,7 +40,7 @@ module CfHighlander
 
     def load_default_config
       begin
-        YAML.load_file("#{@component_name}.config.yaml") || {}
+        YAML.load_file("#{@component_name}.config.yaml", aliases: true) || {}
       rescue Errno::ENOENT => e
         {}
       end
@@ -48,7 +48,7 @@ module CfHighlander
 
     def load_test_case(file)
       begin
-        YAML.load_file(file)
+        YAML.load_file(file, aliases: true)
       rescue Errno::ENOENT => e
         abort "No test file found for #{file}"
       end
