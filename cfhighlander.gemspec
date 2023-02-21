@@ -32,5 +32,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'rexml', '~>3.2', '<4'
   s.add_development_dependency 'rspec', '~> 3.7'
 
-  s.required_ruby_version = '>= 2.7'
+  s.required_ruby_version = '>= 3.1'
 end
