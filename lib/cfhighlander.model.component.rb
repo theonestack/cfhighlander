@@ -75,7 +75,7 @@ module Cfhighlander
         @config = {} if @config.nil?
         Dir["#{@component_dir}/*.config.yaml"].each do |config_file|
           puts "INFO Loading config for #{@name}: read file:#{config_file} "
-          partial_config = YAML.load(File.read(config_file))
+          partial_config = YAML.load(File.read(config_file, aliases: true))
           if (not partial_config)
             STDERR.puts "WARNING: Configuration file #{config_file} could not be loaded"
             next
