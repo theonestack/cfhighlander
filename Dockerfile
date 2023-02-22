@@ -8,6 +8,7 @@ WORKDIR /src
 RUN rm cfhighlander-*.gem ; \
     gem build cfhighlander.gemspec && \
     gem install cfhighlander-*.gem && \
+    gem install rspec && \
     rm -rf /src
 
 RUN adduser -u 1000 -D cfhighlander && \
