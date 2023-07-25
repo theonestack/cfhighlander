@@ -824,6 +824,19 @@ highlanderdocoexample:
       schedules:
        - cronExpression: 'rate(1 minute)'
          payload: '{ "message": "ping" }'
+      
+      # (optional) associate the function with a VPC
+      # both security_group_ids and subnet_ids are lists, so either substitute a list like below or define it as a yaml list
+      vpc:
+        security_group_ids: !Ref ExampleSecurityGroup
+        subnet_ids: !Ref SubnetIds
+      
+      # (optional) associate the function with an Elastic File System
+      # need to reference an access point for the function to attach to
+      # local_mount_path needs to start with /mnt/ like below
+      filesystem:
+        access_point_arn: !Ref ExampleAccessPoint
+        local_mount_path: "/mnt/efs0"
 ```
 
 
