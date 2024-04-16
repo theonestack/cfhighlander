@@ -115,7 +115,7 @@ module Cfhighlander
                 value = { "Fn::And" => [{"Condition" => sub_component.condition}, value]}
               end
               # Adds the condition to the inlined resource if it doesn't already have a condition
-              if element_name == 'Resources'
+              if element_name == 'Resources' || element_name == 'Outputs'
                 value['Condition'] = sub_component.condition unless value.has_key?('Condition')
               end
             end
