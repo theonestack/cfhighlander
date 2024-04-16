@@ -1,6 +1,6 @@
 FROM ruby:3-alpine
 
-ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-111.0.0}
+ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-169.0.0}
 
 COPY . /src
 
@@ -14,7 +14,7 @@ RUN rm cfhighlander-*.gem ; \
 RUN adduser -u 1000 -D cfhighlander && \
     apk add --update python3 py3-pip git openssh-client bash make gcc python3-dev musl-dev && \
     ln $(which pip3) /bin/pip && \
-    pip install awscli
+    python -m pip install --break-system-packages awscli
 
 WORKDIR /work
 
