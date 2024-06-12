@@ -40,9 +40,17 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
       Runtime(lambda_config['runtime'])
       Timeout(lambda_config['timeout'] || 10)
       if !lambda_config['vpc'].nil? && lambda_config['vpc']
-        # TODO implement VPC config
+        vpc_config = {}
+        vpc_config[:SecurityGroupIds] = lambda_config['vpc']['security_group_ids']
+        vpc_config[:SubnetIds] = lambda_config['vpc']['subnet_ids']
+        VpcConfig(vpc_config)
       end
-
+      if !lambda_config['filesystem'].nil? && lambda_config['filesystem']
+        filesystem_config = {}
+        filesystem_config[:Arn] = lambda_config['filesystem']['access_point_arn']
+        filesystem_config[:LocalMountPath] = lambda_config['filesystem']['local_mount_path']
+        FileSystemConfigs(filesystem_config)
+      end
       if !lambda_config['named'].nil? && lambda_config['named']
         if lambda_config['function_name'].nil?
           FunctionName(name)
