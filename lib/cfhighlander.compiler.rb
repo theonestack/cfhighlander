@@ -12,6 +12,7 @@ require 'highline/import'
 require 'zip'
 require_relative './util/zip.util'
 require_relative './util/cloudformation.util'
+require 'ostruct'
 
 module Cfhighlander
 
