@@ -53,7 +53,7 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
     end
 
     Lambda_Version("#{name}Version#{lambda_metadata['version'][key]}") do
-      DeletionPolicy('Retain')
+      DeletionPolicy lambda_config.has_key?('deletion_policy') ? lambda_config['deletion_policy'] : ('Retain')
       FunctionName(Ref(name))
       CodeSha256(lambda_metadata['sha256'][key])
     end
