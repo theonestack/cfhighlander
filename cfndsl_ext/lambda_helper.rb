@@ -40,7 +40,7 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
       Runtime(lambda_config['runtime'])
       Timeout(lambda_config['timeout'] || 10)
       if !lambda_config['vpc'].nil? && lambda_config['vpc']
-        # TODO implement VPC config
+        VpcConfig lambda_config['vpc']
       end
 
       if !lambda_config['named'].nil? && lambda_config['named']
@@ -53,7 +53,7 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
     end
 
     Lambda_Version("#{name}Version#{lambda_metadata['version'][key]}") do
-      DeletionPolicy('Retain')
+      DeletionPolicy lambda_config.has_key?('deletion_policy') ? lambda_config['deletion_policy'] : ('Retain')
       FunctionName(Ref(name))
       CodeSha256(lambda_metadata['sha256'][key])
     end
@@ -104,7 +104,13 @@ def render_lambda_functions(cfndsl, lambdas, lambda_metadata, distribution)
 
     if lambda_config.has_key?('log_retention')
       Logs_LogGroup("#{name}LogGroup") do
-        LogGroupName "/aws/lambda/#{name}"
+        if !lambda_config['named'].nil? && lambda_config['named']
+          if lambda_config['function_name'].nil?
+            LogGroupName "/aws/lambda/#{name}"
+          else
+            LogGroupName FnJoin('/', ['/aws/lambda', FnSub(lambda_config['function_name'])])
+          end
+        end
         RetentionInDays lambda_config['log_retention'].to_i
       end
     end
