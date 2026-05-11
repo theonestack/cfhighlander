@@ -1,0 +1,5 @@
+child_a:
+  bucket_prefix: alpha
+
+child_b:
+  bucket_prefix: beta

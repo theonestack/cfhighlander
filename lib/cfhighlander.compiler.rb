@@ -35,12 +35,12 @@ module Cfhighlander
           :process_lambdas,
           :lambda_mock_resolve
 
-      def initialize(component)
+      def initialize(component, qualified_name = nil)
 
         @workdir = ENV['CFHIGHLANDER_WORKDIR']
         @component = component
         @sub_components = []
-        @component_name = component.highlander_dsl.name.downcase
+        @component_name = qualified_name || component.highlander_dsl.name.downcase
         @cfndsl_compiled = false
         @config_compiled = false
         @cfn_template_paths = []
@@ -58,8 +58,17 @@ module Cfhighlander
         end
 
         @component.highlander_dsl.subcomponents.each do |sub_component|
-          sub_component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(sub_component.component_loaded)
-          sub_component_compiler.component_name = sub_component.name
+          # Inline sub-components share the parent's output directory and their
+          # resources get flattened into the parent template, so they don't need
+          # stable filenames. Qualify with parent name to prevent collisions when
+          # multiple sibling components define sub-components with the same name.
+          child_name = if sub_component.inlined
+            "#{@component_name}_#{sub_component.name}"
+          else
+            sub_component.name
+          end
+          sub_component_compiler = Cfhighlander::Compiler::ComponentCompiler.new(sub_component.component_loaded, child_name)
+          sub_component_compiler.component_name = child_name
           @sub_components << sub_component_compiler
         end
       end
