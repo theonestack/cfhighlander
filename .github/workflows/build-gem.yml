@@ -22,7 +22,10 @@ jobs:
     steps:
     - name: Check out the repo
       uses: actions/checkout@v3
-    
+
+    - name: Print environment variables
+      run: env | sort
+
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby }}
