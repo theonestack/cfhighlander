@@ -102,7 +102,7 @@ module Cfhighlander
         component_cfndsl.gsub!("\n", "\n\t")
         component_cfndsl.gsub!("\r\n", "\r\n\t")
         # render cfndsl
-        renderer = ERB.new(File.read("#{__dir__}/../templates/cfndsl.component.template.erb"), nil, '-')
+        renderer = ERB.new(File.read("#{__dir__}/../templates/cfndsl.component.template.erb"), trim_mode: '-')
         cfn_template = renderer.result(OpenStruct.new({
             'dsl' => dsl,
             'component_cfndsl' => component_cfndsl,
