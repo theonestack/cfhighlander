@@ -73,7 +73,24 @@ module Cfhighlander
           puts "Trying to load #{component_name}/#{component_version} from #{git_url}##{branch} ... "
           clone_opts = { depth: 1 }
           clone_opts[:branch] = branch if not (branch.nil? or branch.empty?)
-          Git.clone git_url, cache_path, clone_opts
+
+          max_retries = (ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRIES'] || 3).to_i
+          retry_delay = (ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRY_DELAY'] || 1).to_i
+
+          attempt = 0
+          begin
+            Git.clone git_url, cache_path, clone_opts
+          rescue Exception => clone_error
+            attempt += 1
+            if attempt <= max_retries
+              delay = retry_delay * (2**(attempt - 1))
+              STDERR.puts "Component fetch failed (attempt #{attempt}/#{max_retries}), retrying in #{delay}s: #{clone_error}"
+              sleep delay
+              retry
+            else
+              raise clone_error
+            end
+          end
           puts "\t .. cached in #{cache_path}\n"
           # return from cache once it's cloned
           return findTemplateGit(cache_path, component_name, component_version, git_url, branch)
