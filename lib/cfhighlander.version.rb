@@ -1,3 +1,3 @@
 module Cfhighlander
-  VERSION="0.13.7".freeze
+  VERSION="0.13.8".freeze
 end
