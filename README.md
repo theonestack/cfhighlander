@@ -987,6 +987,12 @@ generated files are placed
 `CFHIGHLANDER_AWS_RETRY_LIMIT` - defaults to 10. Number of retries for AWS SDK before giving up.
 AWS SDK uses exponential backoff to make the API calls
 
+`CFHIGHLANDER_COMPONENT_FETCH_RETRIES` - defaults to 3. Number of retries when fetching a
+component from git before giving up. Uses exponential backoff between attempts.
+
+`CFHIGHLANDER_COMPONENT_FETCH_RETRY_DELAY` - defaults to 1. Base delay in seconds used for the
+exponential backoff between component fetch retries (delay doubles with each retry).
+
 
 
 ## Testing components
