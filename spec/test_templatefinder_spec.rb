@@ -129,4 +129,27 @@ RSpec.describe Cfhighlander::Factory::TemplateFinder, "#findTemplateGit" do
     expect(finder).to have_received(:sleep).once.with(1)
   end
 
+  it "honours a custom retry delay and applies exponential backoff to it" do
+    ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRIES'] = '3'
+    ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRY_DELAY'] = '2'
+
+    attempts = 0
+    allow(Git).to receive(:clone) do |_url, path, _opts|
+      attempts += 1
+      raise Git::GitExecuteError, "simulated github flakiness" if attempts < 3
+
+      FileUtils.mkdir_p path
+      File.write(File.join(path, 'mycomponent.cfhighlander.rb'), '')
+    end
+
+    finder.findTemplateGit(
+      @cache_path, 'mycomponent', 'latest', 'https://github.com/theonestack/hl-component-mycomponent', 'master'
+    )
+
+    # custom delay of 2 backs off exponentially: delay * 2**(attempt-1)
+    expect(finder).to have_received(:sleep).twice
+    expect(finder).to have_received(:sleep).with(2)
+    expect(finder).to have_received(:sleep).with(4)
+  end
+
 end
