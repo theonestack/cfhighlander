@@ -74,13 +74,13 @@ module Cfhighlander
           clone_opts = { depth: 1 }
           clone_opts[:branch] = branch if not (branch.nil? or branch.empty?)
 
-          max_retries = (ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRIES'] || 3).to_i
-          retry_delay = (ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRY_DELAY'] || 1).to_i
+          max_retries = parse_non_negative_int(ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRIES'], 3)
+          retry_delay = parse_non_negative_int(ENV['CFHIGHLANDER_COMPONENT_FETCH_RETRY_DELAY'], 1)
 
           attempt = 0
           begin
             Git.clone git_url, cache_path, clone_opts
-          rescue Exception => clone_error
+          rescue StandardError => clone_error
             attempt += 1
             if attempt <= max_retries
               delay = retry_delay * (2**(attempt - 1))
@@ -262,6 +262,20 @@ module Cfhighlander
             template_name: template_name,
             template_version: template_version,
             template_location: template_location)
+      end
+
+      private
+
+      # Parses a value (typically from an env var) as a non-negative integer,
+      # falling back to the given default when the value is nil, empty,
+      # non-numeric or negative.
+      def parse_non_negative_int(value, default)
+        return default if value.nil? || value.to_s.strip.empty?
+
+        parsed = Integer(value)
+        parsed >= 0 ? parsed : default
+      rescue ArgumentError, TypeError
+        default
       end
 
     end
